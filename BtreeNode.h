@@ -51,7 +51,7 @@ private:
             parent = nullptr;
             isleaf = true;
             vector<int> key[7];
-            vector<node*> children[7];
+            vector<node*> children[8];
             value = -1; //value initialized to -1 to show that nothing is stored in the node
             // (Like with the visualization, only positive numbers can be added to the tree)
         }
@@ -101,15 +101,14 @@ public:
     node* search(int x) {
         node* v = root;
         int i;
-        bool found = false;
         while (v) {
-            for (i = 0; i < v->key.size() && x > v->key[i] ; i++){
+            for (i = 0; i < v->key.size() && x >= v->key[i] ; i++){
                 if (x == v->key[i] && v->isleaf) {
-                    found = true;
                     last_visited = v;
                     return v;
                 }
             }
+
             last_visited = v;
             if(hasChildren(v)){
                 v = v->children[i];
@@ -141,15 +140,15 @@ public:
     }
 
     bool hasChildren(node* n) {
-        return !n->children.empty();
+        return n->children.size()!= 0;
     }
 
     template <typename T>
     void shiftRight(vector<T> v,size_t pos){
-        T a();
-        v.push_back(a);
+//        T a;
+//        v.push_back(a);
         for(size_t i = v.size(); i > pos; i--){
-            swap(v[i],v[i-1]);
+            v.insert(v.begin()+i,v[i-1]);
         }
     }
 
@@ -165,27 +164,15 @@ public:
                 node* rc = new node();
 
 
-//                if(!hasChildren(root)){
-//                    size_t i = pivot+1;
-//                }
 
-                //right part after the split
-                for(size_t i = pivot; i < ptr->key.size(); i++){
-                    rc->key.push_back(ptr->key[i]);
-                }
 
-                ptr->key.erase(ptr->key.begin()+pivot,ptr->key.end());
-
-                if(hasChildren(ptr)){
-                    for(size_t i = pivot; i < ptr->children.size(); i++){
-                        rc->children.push_back(ptr->children[i]);
+                if(root == ptr && !hasChildren(root)){
+                    for (int i = pivot; i < ptr->key.size(); i++) {
+                        rc->key.push_back(ptr->key[i]);
                     }
 
-                    ptr->children.erase(ptr->children.begin()+pivot,ptr->children.end());
-                }
+                    ptr->key.erase(ptr->key.begin() + pivot, ptr->key.end());
 
-
-                if(root == ptr){
                     node* temp = new node();
                     temp->isleaf = false;
                     rc->parent = temp;
@@ -200,16 +187,57 @@ public:
 
                     this->root = temp;
                     ptr->parent = root;
+                    ptr->isleaf = true;
+
+
                 }else{
-                    size_t pos = findPos(ptr->parent->key,ptr->key[pivot]);
-                    shiftRight(ptr->parent->key,pos);
+                    int pushed = ptr->key[pivot];
+                    for (int i = pivot + 1; i < ptr->key.size(); i++) {
+                        rc->key.push_back(ptr->key[i]);
+                    }
 
-                    ptr->parent->key[pos] = ptr->key[pivot];
-                    shiftRight(ptr->parent->children,pos+1);
+                    ptr->key.erase(ptr->key.begin() + pivot, ptr->key.end());
 
-                    ptr->parent->children[pos] = ptr;
-                    ptr->parent->children[pos+1] = rc;
-                    rc->parent = ptr->parent;
+                    if (hasChildren(ptr)) {
+                        for (size_t i = pivot + 1,j = 0; i < ptr->children.size(); i++,j++) {
+                            rc->children.push_back(ptr->children[i]);
+                            rc->children[j]->parent = rc;
+                        }
+
+
+                        ptr->children.erase(ptr->children.begin() + pivot+1, ptr->children.end());
+                    }
+
+                    rc->isleaf = false;
+                    ptr->isleaf = false;
+
+                    if (root == ptr) {
+
+                        node* temp = new node();
+                        temp->isleaf = false;
+                        rc->parent = temp;
+
+                        temp->key.push_back(pushed);
+                        //store the children in new root
+                        temp->children.push_back(ptr);
+                        temp->children.push_back(rc);
+                        this->root = temp;
+                        ptr->parent = root;
+
+                    }
+
+                    else {
+                        size_t pos = findPos(ptr->parent->key, ptr->key[pivot]);
+                        shiftRight(ptr->parent->key, pos);
+
+                        ptr->parent->key.insert(ptr->parent->key.begin()+pos,pushed);
+                        shiftRight(ptr->parent->children, pos + 1);
+
+                        //ptr->parent->children.insert(ptr->parent->children.begin()+pos,ptr);
+                        ptr->parent->children.insert(ptr->parent->children.begin()+pos+1,rc);
+                        rc->parent = ptr->parent;
+                    }
+
 
 
                 }
@@ -221,29 +249,29 @@ public:
                 size_t pos = findPos(ptr->parent->key, ptr->key[pivot]);
 
                 shiftRight(ptr->parent->key,pos);
-                ptr->parent->key[pos] = ptr->key[pivot];
+                ptr->parent->key.insert(ptr->parent->key.begin()+pos,ptr->key[pivot]);
 
                 if(pos == 0){
                     node* left = new node();
-                    left->isleaf = false;
+                    //left->isleaf = true;
                     for(size_t i = 0; i < pivot; i++){
                         left->key.push_back(ptr->key[i]);
                     }
                     left->parent = ptr->parent;
-                    size_t i = pivot,j = 0;
-                    for(i,j; i < ptr->key.size(); i++,j++){
-                        ptr->key[j] = ptr->key[i];
-
+                    size_t i = pivot,j = 0,size = ptr->key.size();
+                    for(i,j; i < size; i++,j++){
+						swap(ptr->key[j], ptr->key[i]);
                     }
                     ptr->key.erase(ptr->key.begin()+j,ptr->key.end());
 
 
                     shiftRight(ptr->parent->children,0);
-                    ptr->parent->children[0] = left;
+					ptr->parent->children.insert(ptr->parent->children.begin(), left);
+                    left->parent = ptr->parent;
 
                 }else{
                     node* right = new node();
-                    right->isleaf = false;
+                    //right->isleaf = true;
                     for(size_t i = pivot; i < ptr->key.size(); i++){
                         right->key.push_back(ptr->key[i]);
 
@@ -252,7 +280,8 @@ public:
 
 
                     shiftRight(ptr->parent->children,pos+1);
-                    ptr->parent->children[pos+1] = right;
+                    ptr->parent->children.insert(ptr->parent->children.begin()+pos+1,right);
+                    right->parent = ptr->parent;
 
 
 
@@ -270,6 +299,10 @@ public:
     //insert success or not, not tested as well
     bool insert(int item) {
 
+        node* y = search(item);
+        if (y) {
+            return false;
+        }
         if (root == nullptr) {
             root = new node();
             root->isleaf = false;
@@ -283,35 +316,32 @@ public:
             root->key.insert(root->key.begin()+pos,item);
         }
         else {
-            node* y = search(item);
-            if (y) {
-                return false;
-            }
+
+
             int i = findPos(last_visited->key, item);
 
 
-            if(last_visited->isleaf){
-                //make room for store item at position
-                last_visited->key.push_back(0);
-                last_visited->children.push_back(nullptr);
-                rotate(last_visited->key.rbegin(),last_visited->key.rbegin()+i,last_visited->key.rend());
-                rotate(last_visited->children.rbegin(),last_visited->children.rbegin()+i,last_visited->children.rend());
+//            if(last_visited->isleaf){
+            //make room for store item at position
+//                last_visited->key.push_back(0);
+//                last_visited->children.push_back(nullptr);
+            shiftRight(last_visited->key,i);
+//            shiftRight(last_visited->children,i);
+//                rotate(last_visited->children.rbegin(),last_visited->children.rbegin()+i,last_visited->children.rend());
 
-                //store the item
-                last_visited->key.insert(last_visited->key.begin()+i,item);
+            //store the item
+            last_visited->key.insert(last_visited->key.begin()+i,item);
 
 //            last_visited->children[i]->key.push_back(item);
 //            last_visited->children[i]->value = item;
 //            last_visited->children[i]->isleaf = true;
 //            last_visited = last_visited->children[i];
-
-
-            }else{
-                last_visited = last_visited->children[i];
-                shiftRight(last_visited->key,i);
-                last_visited->key.insert(last_visited->key.begin()+i,item);
-
-            }
+//            }else{
+//                last_visited = last_visited->children[i];
+//                shiftRight(last_visited->key,i);
+//                last_visited->key.insert(last_visited->key.begin()+i,item);
+//
+//            }
 
 
         }
@@ -322,20 +352,47 @@ public:
     void remove(int);
 
     void levelOrder(ostream& os){
-        queue<node*> traversalQueue;
-        traversalQueue.push(root);
-        while(!traversalQueue.empty()){
-            node * current = traversalQueue.front();
-            traversalQueue.pop();
-            for(auto i:current->key){
-                os << current->key[i] << " ";
-            }
-            for(size_t j = 0; j < current->children.size(); j++){
-                traversalQueue.push(current->children[j]);
-            }
-
+        queue<node *> queue1, queue2;
+        if(!root){
+            os << "NULL" << endl;
+            return;
         }
-
+        queue1.push(root);
+        while(!queue1.empty() || !queue2.empty()){
+            while(!queue1.empty()){
+                if(hasChildren(queue1.front())){
+                    for (auto i : queue1.front()->children) {
+                        queue2.push(i);
+                    }
+                }
+                for(int i = 0; i<queue1.front()->key.size(); i++){
+                    if(!queue1.front()->isleaf && queue1.front()!=root){
+                        os << "K: ";
+                    }
+                    os << queue1.front()->key[i] << " ";
+                }
+                queue1.pop();
+                os << "   ";
+            }
+            os << endl;
+            while(!queue2.empty()){
+                if(hasChildren(queue2.front())){
+                    for (auto i : queue2.front()->children) {
+                        queue1.push(i);
+                    }
+                }
+                for(int i = 0; i<queue2.front()->key.size(); i++){
+                    if(!queue2.front()->isleaf && queue2.front()!=root){
+                        os << "K: ";
+                    }
+                    os << queue2.front()->key[i] << " ";
+                }
+                queue2.pop();
+                os << "   ";
+            }
+            os << endl;
+        }
+        os << endl;
     }
 
 
@@ -344,15 +401,4 @@ public:
 
 };
 
-
-
-
-
-
-
-
-
-
-
 #endif //B_TREE_BTREENODE_H
-
