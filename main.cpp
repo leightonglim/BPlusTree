@@ -1,234 +1,180 @@
-/*
- * Group project B+ Tree
- *
- *
- *
- *
- *
- *
- * Last Modified: 11/25/2019
- *
- *
- *11/27/2019
- *-add utility function,insertion and solve for overflow(neither checked)
- */
-
-
-#ifndef B_TREE_BTREENODE_H
-#define B_TREE_BTREENODE_H
-
 #include <iostream>
-#include <vector>
-#include <cmath>
-#include <queue>
-
+#include <random>
+#include <ctime>
+#include "BtreeNode.h"
+#include "SDL_Plotter.h"
+#include "rectangle.h"
 
 using namespace std;
 
 
-class Bptree {
-private:
+void moveToPosition(rectangle& ,point&, point&,SDL_Plotter&);
+int main(int argc, char ** argv) {
+//    Bptree temp(4);
+//
+//    srand(time(NULL));
+//    for(int i = 20; i > 0; i--){
+//         temp.insert(rand()%100);
+//    }
+//
+//    temp.levelOrder(cout);
+//
+//    SDL_Plotter g(1000,1000,true);
+//    bool stopped = false;
+//    bool colored = false;
+//    int x,y, xd, yd;
+//    int R,G,B;
+//    rectangle r1;
+//    while (!g.getQuit())
+//    {
+//        if(!stopped){
+//            x = rand()%g.getCol();
+//            y = rand()%g.getRow();
+//            R = rand()%256;
+//            G = rand()%256;
+//            B = rand()%256;
+//            for(xd = 0; xd < 10 && x + xd < g.getCol(); xd++ ){
+//                for(yd = 0; yd < 10 && y + yd < g.getRow(); yd++ ){
+//                    if(colored){
+//                        g.plotPixel( x + xd, y + yd, R, G, B);
+//                    }
+//                    else{
+//                        g.plotPixel( x + xd, y + yd, 0, G, 0);
+//                    }
+//                }
+//            }
+//            r1.draw(g);
+//
+//            point x2 = r1.getP2();
+//            x2.y++;
+//
+//            r1.setP2(x2);
+//
+//        }
+//
+//        if(g.kbhit()){
+//            g.getKey();
+//        }
+//
+//        if(g.getMouseClick(x,y)){
+//            stopped = !stopped;
+//        }
+//
+//        g.update();
+//    }
+    SDL_Plotter g(1000,1000, true);
+    color newColor;
+    rectangle r2(point(0,0),point(50,25),RED);
 
-    //total items of the tree
-    int size;
+    char key;
+    //int size = 200;
+    int x = 500;
+    int y = 500;
 
-    //degree of the tree
-    static int order;
+    //int count = 0;
 
-    struct node {
-        node* parent;
-        vector<int> key;
-        bool isleaf;
-        int value;
-        vector<node*> children;
+    //line lineOne(point(100,25),point(101,300)), lineTwo(point(0,0),point(499,499));
+    //lineOne.setColor(RED);
 
-        node() {
-            parent = nullptr;
-            isleaf = true;
-            value = -1; //value initialized to -1 to show that nothing is stored in the node
-            // (Like with the visualization, only positive numbers can be added to the tree)
+    //lineOne.draw(cout);
+    //cout << endl;
+    //lineTwo.draw(cout);
+    //cout << endl;
+
+    while(!g.getQuit()){
+        if(g.kbhit()){
+            key = g.getKey();
+            g.clear();
         }
+//        switch(key){
+//            case RIGHT_ARROW:  r1.move(RIGHT);
+//                break;
+//            case LEFT_ARROW:   r1.move(LEFT);
+//                break;
+//            case UP_ARROW:     r1.move(UP);
+//                if(y < 10){
+//                    y = 10;
+//                }
+//                break;
+//            case DOWN_ARROW:   r1.move(DOWN);
+//                if(y > 500){
+//                    y = 500;
+//                }
+//                break;
+//        }
 
-        node(node* p, vector<int> k, const vector<node*> c) {
-            parent = p;
-            if (!k.empty()) {
-                for (int i = 0; i < order - 1; i++) {
-                    key.push_back(k[i]);
-                }
-            }
-            isleaf = false;
-            for (auto i : c) {
-                children.push_back(i);
-            }
-            value = -1;
+        point x1(400,400);
+        point x2(450,425);
+
+        moveToPosition(r2,x1,x2,g);
+        //newColor.R = rand()%255;
+        //newColor.G = rand()%255;
+        //newColor.B = rand()%255;
+        //lineOne.setColor(newColor);
+
+        //if(count > 1000){
+        //    lineOne.setP1(point(rand()%500,rand()%500));
+        //    count = 0;
+        //}
+        //lineOne.setP2(point(rand()%500,rand()%500));
+        //lineOne.draw(g);
+        //count++;
+        //r1.setColor(newColor);
+        //r2.setColor(newColor);
+
+        //r1.setP1(point(rand()%200,rand()%200));
+        //r1.setP2(point(r1.getP1().x +rand()%300 , r1.getP1().y + rand()%300));
+
+        //r1.draw(g);
+        //r2.draw(g);
+
+        //for(int row = y; row <= y+size; row ++){
+        //    for(int col = x; col <=x+size; col ++){
+        //        g.plotPixel(col, row, 200, 30, 30);
+        //    }
+        //}
+        g.update();
+        //g.Sleep(delay--);
+        g.clear();
+
+    }
+
+
+    return 0;
+}
+void moveToPosition(rectangle& a, point& p1,point& p2,SDL_Plotter& g){
+    unsigned int DELAY = 5;
+
+    while(a.getP1().y != p1.y ){
+        if(p1.y > a.getP1().y){
+            a.move(DOWN);
+        }else{
+            a.move(UP);
         }
+        a.draw(g);
+        g.update();
+        a.erase(g);
+        g.Sleep(DELAY);
+    }
 
-        node(node* p, vector<int> k, bool l) {
-            parent = p;
-            if (!k.empty()) {
-                for (int i = 0; i < order - 1; i++) {
-                    key.push_back(k[i]);
-                }
-            }
-            isleaf = true;
-            value = -1;
+
+    while(a.getP1().x != p1.x){
+        if(p1.x > a.getP1().x){
+            a.move(RIGHT);
+        }else{
+            a.move(LEFT);
         }
-
-        ~node() = default;
-    };
-
-    node* root = nullptr;
-
-    //element that last visited
-    node* last_visited = nullptr;
-
-public:
-    Bptree(int s, int o){
-        root = nullptr;
-        size = s;
-        order = o;
-    }
-
-    ~Bptree(){ //not implemented
-
-    }
-
-    node* search(int x) {
-        node* v = root;
-        int i;
-        bool found = false;
-        while (v) {
-            for (i = -1; i < v->key.size() && x > v->key[i+1] ; ++i){
-                if (x == v->key[i] && v->isleaf) {
-                    found = true;
-                    last_visited = v;
-                    return v;
-                }
-            }
-            last_visited = v;
-            v = v->children[i+1];
-
-        }
-
-        return nullptr;
-
+        a.draw(g);
+        g.update();
+        a.erase(g);
+        g.Sleep(DELAY);
     }
 
 
-
-    node* merge(node*, node*);
-
-    static int findPos(vector<int> arr,int comp) {
-        int i;
-        for (i = -1; i < arr.size() && comp > arr[i + 1]; i++) {}
-        return i+1;
-    }
-
-    bool isFull(node* n) {
-        return n->key.size() == this->order;
-    }
-
-    static bool hasChildren(node* n) {
-        return n->children.empty();
-    }
-
-    // haven't tested yet
-    void solveOverFlow(node* ptr) {
-        while (ptr->key.size() > order) {
-            if (!isFull(ptr->parent) ){
-                int pivot = ptr->key.size() / 2;
-                int pos = findPos(ptr->parent->key, ptr->key[pivot]);
-                for (int j = ptr->parent->key.size() -1; j != pos; j--) {
-                    swap(ptr->parent->key[j], ptr->parent->key[j - 1]);
-                }
-                ptr->parent->key[pos] = ptr->key[pivot];
-
-
-
-
-                vector<int> left, right;
-
-                for (int i = 0; i < pos; i++) {
-                    left[i] = ptr->parent->children[pos]->key[i];
-                }
-                for (int i = pos; i < ptr->parent->children.size(); i++) {
-                    right[i] = ptr->parent->children[pos]->key[i];
-                }
-                ptr->parent->children[pos]->key = left;
-                ptr->parent->children[pos + 1]->key = right;
-
-            }
-        }
-    }
-
-
-    //insert success or not, not tested as well
-    bool insert(int item) {
-
-        if (root == nullptr || !hasChildren(root)) {
-            root = new node();
-            root->key.push_back(item);
-            this->size++;
-        }
-        else {
-            node* y = search(item);
-            if (y) {
-                return false;
-            }
-            int i = findPos(last_visited->key, item);
-
-            //make room for store item at position
-            for (int j = last_visited->key.size() -1; j != i; j--) {
-                swap(last_visited->key[j], last_visited->key[j - 1]);
-                swap(last_visited->children[j+1], last_visited->children[j]);
-            }
-            //store the item
-            last_visited->key[i] = item;
-            vector<node*> empty;
-
-            last_visited->children[i]->key.push_back(item);
-            last_visited->children[i]->value = item;
-            last_visited->children[i]->isleaf = true;
-
-            last_visited = last_visited->children[i];
-        }
-
-        solveOverFlow(last_visited);
-    }
-
-    void remove(int);
-
-    void levelOrder(ostream& os){
-        queue<node*> traversalQueue;
-        traversalQueue.push(root);
-        while(!traversalQueue.empty()){
-            node * current = traversalQueue.front();
-            traversalQueue.pop();
-            for(size_t i = 0; i < current->key.size(); i++){
-
-                if(!current->isleaf){
-                    traversalQueue.push(current->children[i]);
-
-                }
-            }
-        }
-
-    }
+    a.draw(g);
 
 
 
 
 
-};
-
-
-
-
-
-
-
-
-
-
-
-#endif //B_TREE_BTREENODE_H
+}

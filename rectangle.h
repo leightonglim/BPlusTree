@@ -28,6 +28,8 @@
 #include "color.h"
 #include "SDL_Plotter.h"
 
+enum DIRECTION{UP ,DOWN ,LEFT , RIGHT};
+
 class rectangle {
     private:
         point p1, p2;
@@ -109,6 +111,10 @@ class rectangle {
          *
         */
         void draw(SDL_Plotter& g);
+
+        void erase(SDL_Plotter& g);
+
+        void move(DIRECTION);
 };
 
 #endif // RECTANGLE_H_INCLUDED
