@@ -1,43 +1,26 @@
 void levelOrder(ostream& os){
-        queue<node *> queue1, queue2;
+        queue<node *> queue;
         if(!root){
             os << "NULL" << endl;
             return;
         }
-        queue1.push(root);
-        while(!queue1.empty() || !queue2.empty()){
-            while(!queue1.empty()){
-                if(hasChildren(queue1.front())){
-                    for (auto i : queue1.front()->children) {
-                        queue2.push(i);
+        queue.push(root);
+        while(!queue.empty()){
+            while(!queue.empty()){
+                if(hasChildren(queue.front())){
+                    for (auto i : queue.front()->children) {
+                        queue.push(i);
                     }
                 }
-                for(int i = 0; i<queue1.front()->key.size(); i++){
-                    if(!queue1.front()->isleaf && queue1.front()!=root){
+                for(int i = 0; i<queue.front()->key.size(); i++){
+                    if(!queue.front()->isleaf && queue.front()!=root){
                         os << "K: ";
                     }
-                    os << queue1.front()->key[i] << " ";
+                    os << queue.front()->key[i] << " ";
                 }
-                queue1.pop();
-                os << "   ";
-            }
-            os << endl;
-            while(!queue2.empty()){
-                if(hasChildren(queue2.front())){
-                    for (auto i : queue2.front()->children) {
-                        queue1.push(i);
-                    }
-                }
-                for(int i = 0; i<queue2.front()->key.size(); i++){
-                    if(!queue2.front()->isleaf && queue2.front()!=root){
-                        os << "K: ";
-                    }
-                    os << queue2.front()->key[i] << " ";
-                }
-                queue2.pop();
+                queue.pop();
                 os << "   ";
             }
             os << endl;
         }
-        os << endl;
     }
