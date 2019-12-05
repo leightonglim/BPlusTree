@@ -125,10 +125,6 @@ public:
 
     }
 
-
-
-    node* merge(node*, node*);
-
     size_t findPos(vector<int> arr,int comp) {
         size_t i;
         for (i = 0; i < arr.size() && comp > arr[i]; i++) {}
@@ -358,12 +354,39 @@ public:
         return i;
     }
 
-    template <typename T>
-    void shiftLeft(vector<T> v,int pos){
+    node* searchDelete(int x) {
+        node* v = root;
+        bool isKey = false;
+        int posOfKey;
+        node * keyPtr = nullptr;
         int i;
-        for(i = pos; i < v.size(); i++){
-            swap(v[i],v[i+1]);
+        while (v) {
+            for (i = 0; i < v->key.size() && x >= v->key[i] ; i++){
+                if (x == v->key[i]) {
+                    if(v->isleaf){
+                        if(isKey && v->key.size()>1){
+                            keyPtr->key[posOfKey]=v->key[1];
+                        }
+                        last_visited = v;
+                        return v;
+                    }
+                    else{
+                        isKey = true;
+                        keyPtr = v;
+                        posOfKey = i;
+                    }
+                }
+            }
+            last_visited = v;
+            if(hasChildren(v)){
+                v = v->children[i];
+            }else{
+                return nullptr;
+            }
+            i = 0;
         }
+        return nullptr;
+
     }
 
     bool remove(int item){
@@ -374,19 +397,23 @@ public:
             if(pos==-1){
                 return false;
             }
-            shiftLeft(root->key, pos);
-            root->key.pop_back();
+            root->key.erase(root->key.begin()+pos);
         }else{
-            node *y = search(item);
+            node *y = searchDelete(item);
             if(!y){
                 return false;
             }
-            int i = findPosDelete(last_visited->key, item);
-            shiftLeft(last_visited->key, i);
-            last_visited->key.pop_back();
-            if(last_visited->key.size()>order/2){}
-            // merge if necessary
+            int pos = findPosDelete(last_visited->key, item);
+            last_visited->key.erase(last_visited->key.begin()+pos);
+            double min = (order-1)/2.0;
+            if(last_visited->key.size()<min){
+                merge(last_visited);
+            }
         }
+    }
+
+    node* merge(node* ptr){
+        
     }
 
     void levelOrder(ostream& os){
