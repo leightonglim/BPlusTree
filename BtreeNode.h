@@ -26,55 +26,48 @@
 #include <cmath>
 #include <queue>
 #include <algorithm>
+#include <list>
+#include "SDL_Plotter.h"
+#include "rectangle.h"
+#include "line.h"
+
 
 using namespace std;
-
-
-
 
 class Bptree {
 private:
 
     //degree of the tree
     int order;
-
-
+    unsigned int delay;
+    SDL_Plotter g;
 
     struct node {
+        point upperLeft,downRight;
+        rectangle it;
         node* parent;
         vector<int> key;
+        vector<rectangle> keyBlock;
         bool isleaf;
         int value;
         vector<node*> children;
+        node *leftSib,*rightSib;
 
         node() {
+            rectangle it;
+
             parent = nullptr;
             isleaf = true;
             vector<int> key[7];
-            vector<node*> children[8];
+            vector<rectangle> keyBlock[7];
+
+
+            vector<node*> children[9];
+            node* leftSib = nullptr;
+            node* rightSib = nullptr;
+
             value = -1; //value initialized to -1 to show that nothing is stored in the node
             // (Like with the visualization, only positive numbers can be added to the tree)
-        }
-
-//        node(node* p, vector<int> k, const vector<node*> c) {
-//            parent = p;
-//            if (!k.empty()) {
-//                for (int i = 0; i < order - 1; i++) {
-//                    key.push_back(k[i]);
-//                }
-//            }
-//            isleaf = false;
-//            for (auto i : c) {
-//                children.push_back(i);
-//            }
-//            value = -1;
-//        }
-
-        node(node* p,int k, bool l) {
-            parent = p;
-            key.push_back(k);
-            isleaf = true;
-//            value = -1;
         }
 
         ~node(){};
@@ -85,13 +78,16 @@ private:
     //element that last visited
     node* last_visited = nullptr;
 
+    list<node*> leaves;
+
 public:
 
 
-    Bptree(int o){
+    Bptree(int o,SDL_Plotter& p){
         root = nullptr;
         order = o;
-
+        g = p;
+        delay = 5;
     }
 
     ~Bptree(){ //not implemented
@@ -103,11 +99,15 @@ public:
         int i;
         while (v) {
             for (i = 0; i < v->key.size() && x >= v->key[i] ; i++){
-                if (x == v->key[i] && v->isleaf) {
-                    last_visited = v;
-                    return v;
-                }
             }
+            if (x == v->key[i] && v->isleaf) {
+                last_visited = v;
+                return v;
+            }else if(x == v->key[i] && !v->parent){
+                last_visited = v;
+                return v;
+            }
+
 
             last_visited = v;
             if(hasChildren(v)){
@@ -143,28 +143,52 @@ public:
         return n->children.size()!= 0;
     }
 
-    template <typename T>
-    void shiftRight(vector<T> v,size_t pos){
+//    rectangle LeftSibiling(node* n){
+//        if(n != root && n != n->parent->children[0]){
+//            return;
+//        }
+//    }
+
+
+    void shiftRight(node* n,size_t pos){
+//        T a;
+//        v.push_back(a);
+        for(size_t i = n->key.size(); i > pos; i--){
+            n->key.insert(n->key.begin()+i,n->key[i-1]);
+        }
+        //adjustGraphR(n);
+    }
+
+    void shiftRight(vector<node*> v,size_t pos){
 //        T a;
 //        v.push_back(a);
         for(size_t i = v.size(); i > pos; i--){
+//            node* temp = v[i];
+//            point x1(temp->upperLeft.x+=40,temp->upperLeft.y);
+//            point x2(temp->downRight.x+=40,temp->downRight.y);
             v.insert(v.begin()+i,v[i-1]);
+
+//            moveToPosition(temp->it,x1,x2);
+
+
         }
     }
 
 
-
-    // haven't tested yet
     void solveOverFlow(node* ptr) {
         while (ptr && ptr->key.size() >= order) {
-            size_t pivot = ptr->key.size() / 2;
+            size_t pivot = ceil(static_cast<double>(ptr->key.size()) / 2.0);
 
             if(!ptr->isleaf){
                 //create a right children
                 node* rc = new node();
-
-
-
+//                rc->leftSib = ptr;
+//                if(ptr->rightSib){
+//                    rc->rightSib = ptr->rightSib;
+//                    rc->rightSib->leftSib = rc;
+//                }
+//
+//                ptr->rightSib = rc;
 
                 if(root == ptr && !hasChildren(root)){
                     for (int i = pivot; i < ptr->key.size(); i++) {
@@ -228,12 +252,11 @@ public:
 
                     else {
                         size_t pos = findPos(ptr->parent->key, ptr->key[pivot]);
-                        shiftRight(ptr->parent->key, pos);
+                        shiftRight(ptr->parent, pos);
 
                         ptr->parent->key.insert(ptr->parent->key.begin()+pos,pushed);
                         shiftRight(ptr->parent->children, pos + 1);
 
-                        //ptr->parent->children.insert(ptr->parent->children.begin()+pos,ptr);
                         ptr->parent->children.insert(ptr->parent->children.begin()+pos+1,rc);
                         rc->parent = ptr->parent;
                     }
@@ -248,11 +271,13 @@ public:
 
                 size_t pos = findPos(ptr->parent->key, ptr->key[pivot]);
 
-                shiftRight(ptr->parent->key,pos);
+                shiftRight(ptr->parent,pos);
                 ptr->parent->key.insert(ptr->parent->key.begin()+pos,ptr->key[pivot]);
 
                 if(pos == 0){
                     node* left = new node();
+//                    left->rightSib = ptr;
+//                    ptr->leftSib = left;
                     //left->isleaf = true;
                     for(size_t i = 0; i < pivot; i++){
                         left->key.push_back(ptr->key[i]);
@@ -271,6 +296,11 @@ public:
 
                 }else{
                     node* right = new node();
+                    right->leftSib = ptr;
+                    right->rightSib = ptr->rightSib;
+                    right->rightSib->leftSib = right;
+                    ptr->rightSib = right;
+
                     //right->isleaf = true;
                     for(size_t i = pivot; i < ptr->key.size(); i++){
                         right->key.push_back(ptr->key[i]);
@@ -296,8 +326,12 @@ public:
     }
 
 
-    //insert success or not, not tested as well
+    //insert success or not
     bool insert(int item) {
+
+//        rectangle temp;
+//        temp.draw(g);
+//        g.update();
 
         node* y = search(item);
         if (y) {
@@ -306,47 +340,48 @@ public:
         if (root == nullptr) {
             root = new node();
             root->isleaf = false;
+            root->leftSib = nullptr;
+            root->rightSib = nullptr;
+
             root->key.push_back(item);
             last_visited = root;
+            point x1(475,0);
+            point x2(525,30);
+            rectangle rt1(x1,x2);
+            root->it = rt1;
+            root->keyBlock.push_back(rt1);
+            moveToPosition(root->it,x1,x2);
+            rectangle r1(x1,x2);
+            root->it = r1;
+            root->it.draw(g);
 
         }else if(!hasChildren(root)){
             size_t pos = findPos(root->key,item);
-
-            shiftRight(root->key,pos);
+//            rectangle r1 = drawKeyPos(root,item);
+            shiftRight(root,pos);
             root->key.insert(root->key.begin()+pos,item);
+            root->it.erase(g);
+            point x2 = root->it.getP2();
+            x2.x +=50;
+            root->it.draw(g);
+
+//            moveToPosition(temp,x1,x2);
+//            root->it.draw(g);
+//            g.update();
         }
         else {
 
 
             int i = findPos(last_visited->key, item);
-
-
-//            if(last_visited->isleaf){
             //make room for store item at position
-//                last_visited->key.push_back(0);
-//                last_visited->children.push_back(nullptr);
-            shiftRight(last_visited->key,i);
-//            shiftRight(last_visited->children,i);
-//                rotate(last_visited->children.rbegin(),last_visited->children.rbegin()+i,last_visited->children.rend());
+            shiftRight(last_visited,i);
 
             //store the item
             last_visited->key.insert(last_visited->key.begin()+i,item);
 
-//            last_visited->children[i]->key.push_back(item);
-//            last_visited->children[i]->value = item;
-//            last_visited->children[i]->isleaf = true;
-//            last_visited = last_visited->children[i];
-//            }else{
-//                last_visited = last_visited->children[i];
-//                shiftRight(last_visited->key,i);
-//                last_visited->key.insert(last_visited->key.begin()+i,item);
-//
-//            }
-
-
         }
 
-        solveOverFlow(last_visited);
+         solveOverFlow(last_visited);
     }
 
     void remove(int);
@@ -393,9 +428,47 @@ public:
             os << endl;
         }
         os << endl;
+
+
+
+    }
+
+    void setSpeed(unsigned int dl){
+        delay = dl;
+    }
+
+    void findSib(node* n){
+        if(n == root){
+            return;
+        }else if(n->isleaf){
+
+        }
+    }
+
+    int findCpos(node* n){
+        int i = 0;
+        for(i ; n != n->parent->children[i] && i < n->parent->children.size(); i++){}
+        return i;
     }
 
 
+
+
+    rectangle drawKeyPos(node*,int );
+
+    rectangle findPosition(node*);
+
+    void conncetNode(node*,node*);
+
+    void draw(){
+        root->it.draw(g);
+    }
+
+    void moveToPosition(rectangle& ,point&, point&);
+
+    void adjustGraphL(node*);
+
+    void adjustGraphR(node*);
 
 
 

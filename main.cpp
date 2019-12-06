@@ -8,17 +8,12 @@
 using namespace std;
 
 
-void moveToPosition(rectangle& ,point&, point&,SDL_Plotter&);
+
 int main(int argc, char ** argv) {
-//    Bptree temp(4);
-//
-//    srand(time(NULL));
-//    for(int i = 20; i > 0; i--){
-//         temp.insert(rand()%100);
-//    }
-//
-//    temp.levelOrder(cout);
-//
+
+
+
+
 //    SDL_Plotter g(1000,1000,true);
 //    bool stopped = false;
 //    bool colored = false;
@@ -66,6 +61,12 @@ int main(int argc, char ** argv) {
     color newColor;
     rectangle r2(point(0,0),point(50,25),RED);
 
+    Bptree temp(4,g);
+    srand(time(NULL));
+
+
+//
+
     char key;
     //int size = 200;
     int x = 500;
@@ -86,6 +87,11 @@ int main(int argc, char ** argv) {
             key = g.getKey();
             g.clear();
         }
+
+        int i = 0;
+        if( i < 5) i++;
+        temp.insert(i);
+
 //        switch(key){
 //            case RIGHT_ARROW:  r1.move(RIGHT);
 //                break;
@@ -103,10 +109,10 @@ int main(int argc, char ** argv) {
 //                break;
 //        }
 
-        point x1(400,400);
-        point x2(450,425);
+//        point x1(400,400);
+//        point x2(450,425);
 
-        moveToPosition(r2,x1,x2,g);
+//        moveToPosition(r2,x1,x2,g);
         //newColor.R = rand()%255;
         //newColor.G = rand()%255;
         //newColor.B = rand()%255;
@@ -141,40 +147,4 @@ int main(int argc, char ** argv) {
 
 
     return 0;
-}
-void moveToPosition(rectangle& a, point& p1,point& p2,SDL_Plotter& g){
-    unsigned int DELAY = 5;
-
-    while(a.getP1().y != p1.y ){
-        if(p1.y > a.getP1().y){
-            a.move(DOWN);
-        }else{
-            a.move(UP);
-        }
-        a.draw(g);
-        g.update();
-        a.erase(g);
-        g.Sleep(DELAY);
-    }
-
-
-    while(a.getP1().x != p1.x){
-        if(p1.x > a.getP1().x){
-            a.move(RIGHT);
-        }else{
-            a.move(LEFT);
-        }
-        a.draw(g);
-        g.update();
-        a.erase(g);
-        g.Sleep(DELAY);
-    }
-
-
-    a.draw(g);
-
-
-
-
-
 }
