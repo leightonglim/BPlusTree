@@ -47,24 +47,21 @@ private:
         rectangle it;
         node* parent;
         vector<int> key;
-        vector<rectangle> keyBlock;
+        vector<rectangle> keyBlock[7];
         bool isleaf;
         int value;
         vector<node*> children;
-        node *leftSib,*rightSib;
+        node *leftSib = nullptr,*rightSib = nullptr;
 
         node() {
-            rectangle it;
 
+            rectangle it;
             parent = nullptr;
             isleaf = true;
             vector<int> key[7];
-            vector<rectangle> keyBlock[7];
-
-
             vector<node*> children[9];
-            node* leftSib = nullptr;
-            node* rightSib = nullptr;
+//            node* leftSib = nullptr;
+//            node* rightSib = nullptr;
 
             value = -1; //value initialized to -1 to show that nothing is stored in the node
             // (Like with the visualization, only positive numbers can be added to the tree)
@@ -174,7 +171,6 @@ public:
         }
     }
 
-
     void solveOverFlow(node* ptr) {
         while (ptr && ptr->key.size() >= order) {
             size_t pivot = ceil(static_cast<double>(ptr->key.size()) / 2.0);
@@ -189,6 +185,8 @@ public:
 //                }
 //
 //                ptr->rightSib = rc;
+
+
 
                 if(root == ptr && !hasChildren(root)){
                     for (int i = pivot; i < ptr->key.size(); i++) {
@@ -208,6 +206,29 @@ public:
                     //store the children in new root
                     temp->children.push_back(ptr);
                     temp->children.push_back(rc);
+
+                    point x1;
+                    point x2 = ptr->it.getP2();
+                    x1.x = 750-((order*order)*25);
+                    x1.y = root->it.getP2().y + 30;
+                    x2.x = x1.x + 50;
+                    x2.y = x2.y + 30;
+
+                    rectangle r1(x1,x2);
+                    ptr->keyBlock->push_back(r1);
+                    ptr->it = r1;
+                    r1.draw(g);
+
+                    x2.x = 750+((order*order)*25);
+                    x1.x = x2.x - 30;
+                    rectangle r2(x1,x2);
+                    rc->it = r2;
+                    rc->keyBlock->push_back(r2);
+                    r2.draw(g);
+
+
+
+
 
                     this->root = temp;
                     ptr->parent = root;
@@ -257,6 +278,7 @@ public:
                         ptr->parent->key.insert(ptr->parent->key.begin()+pos,pushed);
                         shiftRight(ptr->parent->children, pos + 1);
 
+                        //ptr->parent->children.insert(ptr->parent->children.begin()+pos,ptr);
                         ptr->parent->children.insert(ptr->parent->children.begin()+pos+1,rc);
                         rc->parent = ptr->parent;
                     }
@@ -275,23 +297,24 @@ public:
                 ptr->parent->key.insert(ptr->parent->key.begin()+pos,ptr->key[pivot]);
 
                 if(pos == 0){
+
                     node* left = new node();
-//                    left->rightSib = ptr;
-//                    ptr->leftSib = left;
-                    //left->isleaf = true;
+                    left->rightSib = ptr;
+                    ptr->leftSib = left;
+
                     for(size_t i = 0; i < pivot; i++){
                         left->key.push_back(ptr->key[i]);
                     }
                     left->parent = ptr->parent;
                     size_t i = pivot,j = 0,size = ptr->key.size();
                     for(i,j; i < size; i++,j++){
-						swap(ptr->key[j], ptr->key[i]);
+                        swap(ptr->key[j], ptr->key[i]);
                     }
                     ptr->key.erase(ptr->key.begin()+j,ptr->key.end());
 
 
                     shiftRight(ptr->parent->children,0);
-					ptr->parent->children.insert(ptr->parent->children.begin(), left);
+                    ptr->parent->children.insert(ptr->parent->children.begin(), left);
                     left->parent = ptr->parent;
 
                 }else{
@@ -301,7 +324,6 @@ public:
                     right->rightSib->leftSib = right;
                     ptr->rightSib = right;
 
-                    //right->isleaf = true;
                     for(size_t i = pivot; i < ptr->key.size(); i++){
                         right->key.push_back(ptr->key[i]);
 
@@ -340,20 +362,18 @@ public:
         if (root == nullptr) {
             root = new node();
             root->isleaf = false;
-            root->leftSib = nullptr;
-            root->rightSib = nullptr;
+//            root->leftSib = nullptr;
+//            root->rightSib = nullptr;
 
             root->key.push_back(item);
             last_visited = root;
-            point x1(475,0);
-            point x2(525,30);
+            point x1(675,400);
+            point x2(725,430);
             rectangle rt1(x1,x2);
             root->it = rt1;
-            root->keyBlock.push_back(rt1);
-            moveToPosition(root->it,x1,x2);
-            rectangle r1(x1,x2);
-            root->it = r1;
             root->it.draw(g);
+            root->keyBlock->push_back(root->it);
+
 
         }else if(!hasChildren(root)){
             size_t pos = findPos(root->key,item);
@@ -361,9 +381,16 @@ public:
             shiftRight(root,pos);
             root->key.insert(root->key.begin()+pos,item);
             root->it.erase(g);
+            point x1 = root->it.getP1();
+            x1.x += 50;
             point x2 = root->it.getP2();
             x2.x +=50;
-            root->it.draw(g);
+
+            rectangle rec(x1,x2);
+            root->it.setP2(x2);
+
+            root->keyBlock->insert(root->keyBlock->begin()+pos,rec);
+            rec.draw(g);
 
 //            moveToPosition(temp,x1,x2);
 //            root->it.draw(g);
@@ -385,6 +412,29 @@ public:
     }
 
     void remove(int);
+
+
+    void levelOrderInSDL(ostream& os){
+        queue<node *> queue1;
+        queue1.push(root);
+
+        while(!queue1.empty()){
+            node* temp = queue1.front();
+            queue1.pop();
+
+            if (temp == nullptr) {
+                os << "NULL ";
+            }else {
+                temp->it.draw(g);
+                g.update();
+                for(int i = 0; i < temp->children.size(); i++){
+                    queue1.push(temp->children[i]);
+                }
+            }
+        }
+        os << endl;
+    }
+
 
     void levelOrder(ostream& os){
         queue<node *> queue1, queue2;
@@ -468,7 +518,6 @@ public:
 
     void adjustGraphL(node*);
 
-    void adjustGraphR(node*);
 
 
 
