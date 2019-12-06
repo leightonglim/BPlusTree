@@ -354,26 +354,20 @@ public:
         return i;
     }
 
-    node* searchDelete(int x) {
+    node* searchDelete(int x, bool &isKey) {
         node* v = root;
-        bool isKey = false;
-        int posOfKey;
+        isKey = false;
         node * keyPtr = nullptr;
         int i;
         while (v) {
             for (i = 0; i < v->key.size() && x >= v->key[i] ; i++){
                 if (x == v->key[i]) {
                     if(v->isleaf){
-                        if(isKey && v->key.size()>1){
-                            keyPtr->key[posOfKey]=v->key[1];
-                        }
                         last_visited = v;
                         return v;
                     }
                     else{
                         isKey = true;
-                        keyPtr = v;
-                        posOfKey = i;
                     }
                 }
             }
@@ -399,7 +393,8 @@ public:
             }
             root->key.erase(root->key.begin()+pos);
         }else{
-            node *y = searchDelete(item);
+            bool isKey = false;
+            node *y = searchDelete(item, isKey);
             if(!y){
                 return false;
             }
@@ -409,11 +404,63 @@ public:
             if(last_visited->key.size()<min){
                 merge(last_visited);
             }
+            if(isKey){
+                //delete the key, replace with child
+            }
         }
     }
 
     node* merge(node* ptr){
-        
+        double min = (order-1)/2.0;
+        node * temp;
+        size_t i;
+        bool done = false;
+        while(ptr && !done){
+            if(ptr->parent){
+                temp = ptr->parent;
+                for(i = 0; i < temp->children.size() && temp->children[i]!=ptr; i++){}
+                if(!hasChildren(ptr)){ //ptr must be a leaf to try borrowing
+                    //try to borrow from right
+                    cout << "Children key size: " << temp->children[i+1]->key.size() << " min = " << min << endl;
+                    if(i+1 < temp->children.size() && temp->children[i+1]->key.size()-1 >= min){
+                        ptr->key.push_back(temp->children[i+1]->key.front());
+                        temp->children[i+1]->key.erase(temp->children[i+1]->key.begin());
+                        temp->key[i]=temp->children[i+1]->key.front();
+                        done = true;
+                    }
+                    //try to borrow from left
+                    else if(i-1>=0 && temp->children[i-1]->key.size()-1 >= min){
+                        ptr->key.insert(ptr->key.begin(), temp->children[i-1]->key.back());
+                        temp->children[i-1]->key.pop_back();
+                        temp->key[i-1]=ptr->key.front();
+                        done = true;
+                    }
+                }
+                if(!done){ //this means borrowing was not successful
+                    if(i+1<temp->children.size()){ //then we will merge with right sibling
+                        cout << "hi" << endl;
+                        for(auto j:temp->children[i+1]->key){
+                            ptr->key.push_back(temp->children[i+1]->key[j]);
+                        }
+                        node * ptr2 = temp->children[i+1];
+                        temp->children.erase(temp->children.begin()+i+1);
+                        delete ptr2;
+                        temp->key.erase(temp->key.begin()+i);
+                    }else{ //then merge with left sibling
+                        for(auto j:ptr->key){
+                            temp->children[i-1]->key.push_back(ptr->key[i]);
+                        }
+                        node * ptr2 = ptr;
+                        ptr = temp->children[i-1];
+                        temp->children.erase(temp->children.begin()+i);
+                        delete ptr2;
+                        temp->key.erase(temp->key.begin()+i-1);
+                    }
+                    done = true;
+                }
+            }
+            break;
+        }
     }
 
     void levelOrder(ostream& os){
