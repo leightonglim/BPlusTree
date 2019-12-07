@@ -26,11 +26,12 @@
 #include <cmath>
 #include <queue>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
+#include "SDLPlotter.h"
+#include "rectangle.h"
 
 using namespace std;
-
-
-
 
 class Bptree {
 private:
@@ -351,6 +352,171 @@ public:
 
     void remove(int);
 
+
+    int xDimension(){
+        queue<node *> queue1, queue2;
+        int count = 0;
+        if(!root){
+            return count;
+        }
+        queue1.push(root);
+        while(!queue1.empty() || !queue2.empty()){
+            while(!queue1.empty()){
+                count+=10;
+                if(hasChildren(queue1.front())){
+                    for (auto i : queue1.front()->children) {
+                        queue2.push(i);
+                    }
+                }
+                for(auto i : queue1.front()->key){
+                    count+=60;
+                }
+                queue1.pop();
+            }
+            if(!queue2.empty()){
+                count=0;
+            }
+            while(!queue2.empty()){
+                count+=10;
+                if(hasChildren(queue2.front())){
+                    for (auto i : queue2.front()->children) {
+                        queue1.push(i);
+                    }
+                }
+                for(auto i : queue1.front()->key){
+                    count+=60;
+                }
+                queue2.pop();
+            }
+            if(!queue1.empty()){
+                count = 0;
+            }
+        }
+        return count;
+    }
+
+    void printDigit(SDL_Plotter &g, int a, point P, color color1, int scale) {
+        ifstream input;
+        int rows, cols;
+        switch(a){
+            case 0:
+                input.open("0.txt");
+                break;
+            case 1:
+                input.open("1.txt");
+                break;
+            case 2:
+                input.open("2.txt");
+                break;
+            case 3:
+                input.open("3.txt");
+                break;
+            case 4:
+                input.open("4.txt");
+                break;
+            case 5:
+                input.open("5.txt");
+                break;
+            case 6:
+                input.open("6.txt");
+                break;
+            case 7:
+                input.open("7.txt");
+                break;
+            case 8:
+                input.open("8.txt");
+                break;
+            case 9:
+                input.open("9.txt");
+                break;
+            default:
+                break;
+        }
+        input >> rows >> cols;
+        char letter[rows][cols];
+        for(int r = 0; r < rows; r++){
+            for(int c = 0; c < cols; c++){
+                input >> letter[r][c];
+            }
+        }
+        for(int y = 0; y < rows; y++){
+            for(int x = 0; x < cols; x++){
+                for(int r=0; r<scale; r++){
+                    for(int c=0; c<scale; c++){
+                        if(letter[y][x]=='1'){
+                            g.plotPixel(P.x+scale*x+r, P.y+scale*y+c, color1.R, color1.G, color1.B);
+                        }
+                    }
+                }
+            }
+        }
+        input.close();
+
+    }
+
+    void plotNumber(const string message, int scale, point P, SDL_Plotter &g, color C) {
+        size_t n=0;
+        while(n<message.length()){
+            switch(message[n]){
+                case '0':
+                    printDigit(g, 0, P, C, scale);
+                    break;
+                case '1':
+                    printDigit(g, 1, P, C, scale);
+                    break;
+                case '2':
+                    printDigit(g, 2, P, C, scale);
+                    break;
+                case '3':
+                    printDigit(g, 3, P, C, scale);
+                    break;
+                case '4':
+                    printDigit(g, 4, P, C, scale);
+                    break;
+                case '5':
+                    printDigit(g, 5, P, C, scale);
+                    break;
+                case '6':
+                    printDigit(g, 6, P, C, scale);
+                    break;
+                case '7':
+                    printDigit(g, 7, P, C, scale);
+                    break;
+                case '8':
+                    printDigit(g, 8, P, C, scale);
+                    break;
+                case '9':
+                    printDigit(g, 9, P, C, scale);
+                    break;
+                default:
+                    break;
+            }
+            n++;
+            P.x+=(18*scale);
+        }
+    }
+
+    void drawNode(SDL_Plotter& g, node * ptr, point P, color C){
+        string arr;
+        int num;
+        stringstream ss;
+        for (int i : ptr->key) {
+            num = i;
+            if(0<=num && num<10){
+                ss << "00";
+            }else if(10<=num && num<100){
+                ss << "0";
+            }
+            ss << num;
+            ss >> arr;
+            ss.clear();
+            rectangle rec(P, point(P.x+60, P.y+25));
+            rec.drawOutline(g);
+            plotNumber(arr, 1, point(P.x+5, P.y+2), g, C);
+            P.x+=60;
+        }
+    }
+
     void levelOrder(ostream& os){
         queue<node *> queue1, queue2;
         if(!root){
@@ -393,6 +559,40 @@ public:
             os << endl;
         }
         os << endl;
+    }
+
+    void drawGraph(SDL_Plotter &plotter){
+        plotter.clear();
+        queue<node *> queue1, queue2;
+        queue1.push(root);
+        int x=5, y=5;
+        while(!queue1.empty() || !queue2.empty()){
+            while(!queue1.empty()){
+                if(hasChildren(queue1.front())){
+                    for (auto i : queue1.front()->children) {
+                        queue2.push(i);
+                    }
+                }
+                drawNode(plotter, queue1.front(), point(x, y), color(0, 0, 0));
+                x+=queue1.front()->key.size()*60+10;
+                queue1.pop();
+            }
+            y+=50;
+            x=5;
+            while(!queue2.empty()){
+                if(hasChildren(queue2.front())){
+                    for (auto i : queue2.front()->children) {
+                        queue1.push(i);
+                    }
+                }
+                drawNode(plotter, queue2.front(), point(x, y), color(0, 0, 0));
+                x+=queue2.front()->key.size()*60+10;
+                queue2.pop();
+            }
+            y+=50;
+            x = 5;
+        }
+        plotter.update();
     }
 
 
