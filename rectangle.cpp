@@ -51,6 +51,17 @@ void rectangle::draw(SDL_Plotter& g) {
     }
 }
 
+void rectangle::drawOutline(SDL_Plotter& g) {
+    for(double x=p1.x; x<=p2.x; x++){
+        g.plotPixel(x, p1.y, c.R, c.G, c.B);
+        g.plotPixel(x, p2.y, c.R, c.G, c.B);
+    }
+    for(double y=p1.y; y<=p2.y; y++){
+        g.plotPixel(p1.x, y, c.R, c.G, c.B);
+        g.plotPixel(p2.x, y, c.R, c.G, c.B);
+    }
+}
+
 
 void rectangle::erase(SDL_Plotter& g){
     for (double x = p1.x; x <= p2.x; x++) {

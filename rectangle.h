@@ -26,95 +26,97 @@
 
 #include "point.h"
 #include "color.h"
-#include "SDL_Plotter.h"
+#include "SDLPlotter.h"
 
 enum DIRECTION{UP ,DOWN ,LEFT , RIGHT};
 
 class rectangle {
-    private:
-        point p1, p2;
-        color c;
+private:
+    point p1, p2;
+    color c;
 
-    public:
-        /*
-         * description: default constructor
-         * return: no return
-         * precondition: no
-         * postcondition: sets the variables to default
-         *
-        */
-        rectangle();
-        /*
-         * description: default constructor
-         * return: no return
-         * precondition: two points and a color exists
-         * postcondition: sets the variables to the input
-         *
-        */
-        rectangle(point a, point b, color = BLACK);
+public:
+    /*
+     * description: default constructor
+     * return: no return
+     * precondition: no
+     * postcondition: sets the variables to default
+     *
+    */
+    rectangle();
+    /*
+     * description: default constructor
+     * return: no return
+     * precondition: two points and a color exists
+     * postcondition: sets the variables to the input
+     *
+    */
+    rectangle(point a, point b, color = BLACK);
 
-        /*
-         * description: getting the value of p1
-         * return: point
-         * precondition: no
-         * postcondition: the value of p1 is extracted and returned
-         *
-        */
-        point getP1();
-        /*
-         * description: getting the value of p2
-         * return: point
-         * precondition: no
-         * postcondition: the value of p2 is extracted and returned
-         *
-        */
-        point getP2();
-        /*
-         * description: getting the color
-         * return: color
-         * precondition: no
-         * postcondition: the color is extracted and returned
-         *
-        */
-        color getColor();
+    /*
+     * description: getting the value of p1
+     * return: point
+     * precondition: no
+     * postcondition: the value of p1 is extracted and returned
+     *
+    */
+    point getP1();
+    /*
+     * description: getting the value of p2
+     * return: point
+     * precondition: no
+     * postcondition: the value of p2 is extracted and returned
+     *
+    */
+    point getP2();
+    /*
+     * description: getting the color
+     * return: color
+     * precondition: no
+     * postcondition: the color is extracted and returned
+     *
+    */
+    color getColor();
 
-        /*
-         * description: setting the value of p1
-         * return: no return
-         * precondition: a point exists
-         * postcondition: the value of p1 is set
-         *
-        */
-        void setP1(point p);
-        /*
-         * description: setting the value of p2
-         * return: no return
-         * precondition: a point exists
-         * postcondition: the value of p2 is set
-         *
-        */
-        void setP2(point p);
-         /*
-         * description: setting the color
-         * return: no return
-         * precondition: a color exists
-         * postcondition: the color is set
-         *
-        */
-        void setColor(color a);
+    /*
+     * description: setting the value of p1
+     * return: no return
+     * precondition: a point exists
+     * postcondition: the value of p1 is set
+     *
+    */
+    void setP1(point p);
+    /*
+     * description: setting the value of p2
+     * return: no return
+     * precondition: a point exists
+     * postcondition: the value of p2 is set
+     *
+    */
+    void setP2(point p);
+    /*
+    * description: setting the color
+    * return: no return
+    * precondition: a color exists
+    * postcondition: the color is set
+    *
+   */
+    void setColor(color a);
 
-        /*
-         * description: drawing the rectangle
-         * return: no return
-         * precondition: SDL plotter
-         * postcondition: the rectangle is drawn on screen
-         *
-        */
-        void draw(SDL_Plotter& g);
+    /*
+     * description: drawing the rectangle
+     * return: no return
+     * precondition: SDL plotter
+     * postcondition: the rectangle is drawn on screen
+     *
+    */
+    void draw(SDL_Plotter& g);
 
-        void erase(SDL_Plotter& g);
+    void drawOutline(SDL_Plotter& g);
 
-        void move(DIRECTION);
+    void erase(SDL_Plotter& g);
+
+    void move(DIRECTION);
 };
 
 #endif // RECTANGLE_H_INCLUDED
