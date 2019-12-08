@@ -131,7 +131,17 @@ public:
     bool hasChildren(node* n) {
         return n->children.size()!= 0;
     }
+    
+    void shiftRight(node* n,size_t pos){
 
+        for(size_t i = n->key.size(); i > pos; i--){
+            
+
+            n->key.insert(n->key.begin()+i,n->key[i-1]);
+        }
+    }
+    
+    
     template <typename T>
     void shiftRight(vector<T> v,size_t pos){
 //        T a;
