@@ -42,40 +42,28 @@ private:
 
 
     struct node {
+        point upperLeft,downRight;
+        rectangle it;
         node* parent;
         vector<int> key;
+        vector<rectangle> keyBlock[7];
         bool isleaf;
         int value;
         vector<node*> children;
+        node *leftSib = nullptr,*rightSib = nullptr;
 
         node() {
+
+            rectangle it;
             parent = nullptr;
             isleaf = true;
             vector<int> key[7];
-            vector<node*> children[8];
-            value = -1; //value initialized to -1 to show that nothing is stored in the node
-            // (Like with the visualization, only positive numbers can be added to the tree)
-        }
+            vector<rectangle> keyBlock[7];
+            vector<node*> children[9];
+            leftSib = nullptr;
+            rightSib = nullptr;
 
-//        node(node* p, vector<int> k, const vector<node*> c) {
-//            parent = p;
-//            if (!k.empty()) {
-//                for (int i = 0; i < order - 1; i++) {
-//                    key.push_back(k[i]);
-//                }
-//            }
-//            isleaf = false;
-//            for (auto i : c) {
-//                children.push_back(i);
-//            }
-//            value = -1;
-//        }
-
-        node(node* p,int k, bool l) {
-            parent = p;
-            key.push_back(k);
-            isleaf = true;
-//            value = -1;
+            value = -1;
         }
 
         ~node(){};
@@ -155,15 +143,25 @@ public:
 
 
 
-    // haven't tested yet
     void solveOverFlow(node* ptr) {
         while (ptr && ptr->key.size() >= order) {
-            size_t pivot = ptr->key.size() / 2;
+            size_t pivot;
+            if(order%2 == 1){
+                pivot = order/2;
+            }else{
+                pivot =(order+1)/2;
+            }
 
             if(!ptr->isleaf){
                 //create a right children
                 node* rc = new node();
+                rc->leftSib = ptr;
+                if(ptr->rightSib){
+                    rc->rightSib = ptr->rightSib;
+                    rc->rightSib->leftSib = rc;
+                }
 
+                ptr->rightSib = rc;
 
 
 
@@ -185,6 +183,29 @@ public:
                     //store the children in new root
                     temp->children.push_back(ptr);
                     temp->children.push_back(rc);
+
+//                    point x1;
+//                    point x2 = ptr->it.getP2();
+//                    x1.x = 750-((order*order)*25);
+//                    x1.y = root->it.getP2().y + 30;
+//                    x2.x = x1.x + 50;
+//                    x2.y = x1.y + 30;
+//
+//                    rectangle r1(x1,x2);
+//                    ptr->keyBlock->push_back(r1);
+//                    ptr->it = r1;
+//                    r1.draw(g);
+//
+//                    x2.x = 750+((order*order)*25);
+//                    x1.x = x2.x - 50;
+//                    rectangle r2(x1,x2);
+//                    rc->it = r2;
+//                    rc->keyBlock->push_back(r2);
+//                    r2.draw(g);
+
+
+
+
 
                     this->root = temp;
                     ptr->parent = root;
@@ -229,7 +250,7 @@ public:
 
                     else {
                         size_t pos = findPos(ptr->parent->key, ptr->key[pivot]);
-                        shiftRight(ptr->parent->key, pos);
+                        shiftRight(ptr->parent, pos);
 
                         ptr->parent->key.insert(ptr->parent->key.begin()+pos,pushed);
                         shiftRight(ptr->parent->children, pos + 1);
@@ -249,35 +270,55 @@ public:
 
                 size_t pos = findPos(ptr->parent->key, ptr->key[pivot]);
 
-                shiftRight(ptr->parent->key,pos);
+                shiftRight(ptr->parent,pos);
                 ptr->parent->key.insert(ptr->parent->key.begin()+pos,ptr->key[pivot]);
 
                 if(pos == 0){
+
                     node* left = new node();
-                    //left->isleaf = true;
+                    left->rightSib = ptr;
+                    ptr->leftSib = left;
+
                     for(size_t i = 0; i < pivot; i++){
                         left->key.push_back(ptr->key[i]);
                     }
                     left->parent = ptr->parent;
                     size_t i = pivot,j = 0,size = ptr->key.size();
                     for(i,j; i < size; i++,j++){
-						swap(ptr->key[j], ptr->key[i]);
+                        swap(ptr->key[j], ptr->key[i]);
                     }
                     ptr->key.erase(ptr->key.begin()+j,ptr->key.end());
 
 
                     shiftRight(ptr->parent->children,0);
-					ptr->parent->children.insert(ptr->parent->children.begin(), left);
+                    ptr->parent->children.insert(ptr->parent->children.begin(), left);
                     left->parent = ptr->parent;
 
                 }else{
                     node* right = new node();
-                    //right->isleaf = true;
+                    right->leftSib = ptr;
+                    if(ptr->rightSib){
+                        right->rightSib = ptr->rightSib;
+                        right->rightSib->leftSib = right;
+                    }
+
+                    ptr->rightSib = right;
+
+
                     for(size_t i = pivot; i < ptr->key.size(); i++){
                         right->key.push_back(ptr->key[i]);
 
                     }
                     ptr->key.erase(ptr->key.begin()+pivot,ptr->key.end());
+
+
+//                    rectangle r1 = ptr->it;
+//                    point p1 = ptr->it.getP1();
+//                    point p2 = ptr->it.getP2();
+//                    p1.x -= order*50;
+//                    p2.x = p1.x+50;
+//                    moveToPosition(ptr->it,p1,p2);
+
 
 
                     shiftRight(ptr->parent->children,pos+1);
