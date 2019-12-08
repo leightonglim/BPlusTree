@@ -437,27 +437,38 @@ public:
             if(ptr->key.size() != 0 && ptr->key[x] == item){
                 ptr->key.erase(ptr->key.begin()+x);
             }
+            if(ptr->key.size() >= min && ptr->children.size() >  ptr->key.size()){
+                return;
+            }
 
 
 
 
             if(ptr->leftSib && ptr->leftSib->key.size() > min){
+                int pos1 = findPos(ptr->parent->key,ptr->leftSib->key[ptr->leftSib->key.size()-1]);
+                ptr->parent->key.insert(ptr->parent->key.begin()+pos1,ptr->leftSib->key[ptr->leftSib->key.size()-1]);
+                ptr->leftSib->key.pop_back();
+                if(ptr->parent->key[ptr->parent->key.size()-1] == item){
+                    ptr->key.insert(ptr->key.begin(),ptr->parent->key[pos1]);
 
-                ptr->parent->key.insert(ptr->parent->key.begin(),ptr->leftSib->key[ptr->leftSib->key.size()-1]);
-                ptr->leftSib->key.erase(ptr->leftSib->key.end());
-                ptr->key.insert(ptr->key.begin(),ptr->parent->key[ptr->parent->key.size()-1]);
-                ptr->parent->key.erase(ptr->parent->key.end());
+                }else{
+                    ptr->key.push_back(ptr->parent->key[ptr->parent->key.size()-1]);
+                }
+
+                ptr->parent->key.pop_back();
+
                 if(hasChildren(ptr->leftSib)){
                     ptr->children.insert(ptr->children.begin(),ptr->leftSib->children[ptr->leftSib->children.size()-1]);
                     ptr->children[0]->parent = ptr;
-                    ptr->children.erase(ptr->children.end());
+                    ptr->leftSib->children.pop_back();
                 }
             }
 
             else if(ptr->rightSib && ptr->rightSib->key.size() > min){
                 if(ptr->rightSib->isleaf){
-                    ptr->parent->key.push_back(ptr->rightSib->key[1]);
-                    ptr->key.insert(ptr->key.end(),ptr->parent->key[0]);
+                    int pos2 = findPos(ptr->parent->key,ptr->rightSib->key[1]);
+                    ptr->parent->key.insert(ptr->parent->key.begin()+pos2,ptr->rightSib->key[1]);
+                    ptr->key.push_back(ptr->parent->key[0]);
                     ptr->rightSib->key.erase(ptr->rightSib->key.begin());
                     ptr->parent->key.erase(ptr->parent->key.begin());
                 }else{
@@ -482,11 +493,12 @@ public:
                     for( pos = 0; pos < ptr->parent->children.size() && ptr->parent->children[pos]!=ptr->leftSib; pos++){}
                     ptr->parent->children.erase(ptr->parent->children.begin()+pos);
 
-                    if(ptr->leftSib->leftSib){
-                    ptr->leftSib = ptr->leftSib->leftSib;
+                    if(ptr->leftSib && ptr->leftSib->leftSib){
+                        ptr->leftSib = ptr->leftSib->leftSib;
+                        ptr->leftSib->rightSib = ptr;
                     }
 
-                    ptr->leftSib->rightSib = ptr;
+
 
 
                 }else if(ptr->rightSib && ptr->rightSib->parent == ptr->parent){
@@ -504,11 +516,12 @@ public:
                         ptr->parent->key.erase(ptr->parent->key.begin()+po);
                     }
 
-                    if(ptr->rightSib->rightSib){
+                    if(ptr->rightSib && ptr->rightSib->rightSib){
                         ptr->rightSib = ptr->rightSib->rightSib;
+                        ptr->rightSib->leftSib = ptr;
                     }
 
-                    ptr->rightSib->leftSib = ptr;
+
                 }
 
             }else{
@@ -520,17 +533,18 @@ public:
                     ptr->parent->children.erase(ptr->parent->children.begin()+i);
                     ptr->key.push_back(k);
                     for(int j = 0; j < ptr->leftSib->key.size(); j++){
-                        ptr->key.insert(ptr->key.begin()+j,ptr->rightSib->key[j]);
+                        ptr->key.insert(ptr->key.begin()+j,ptr->leftSib->key[j]);
                     }
                     for(int k = 0; k < ptr->leftSib->children.size(); k++){
                         ptr->children.insert(ptr->children.begin()+k,ptr->leftSib->children[k]);
                     }
 
-                    if(ptr->leftSib->leftSib){
-                    ptr->leftSib = ptr->leftSib->leftSib;
+                    if(ptr->leftSib && ptr->leftSib->leftSib){
+                        ptr->leftSib = ptr->leftSib->leftSib;
+                        ptr->leftSib->rightSib = ptr;
                     }
 
-                    ptr->leftSib->rightSib = ptr;
+
 
                     for(int o = 0; o < ptr->children.size();o++){
                         ptr->children[o]->parent = ptr;
@@ -550,10 +564,11 @@ public:
                     for(int k = 0; k < ptr->rightSib->children.size(); k++){
                         ptr->children.push_back(ptr->rightSib->children[k]);
                     }
-                    if(ptr->rightSib->rightSib){
-                    ptr->rightSib = ptr->rightSib->rightSib;
+                    if(ptr-> rightSib && ptr->rightSib->rightSib){
+                        ptr->rightSib = ptr->rightSib->rightSib;
+                        ptr->rightSib->leftSib = ptr;
                     }
-                    ptr->rightSib->leftSib = ptr;
+
 
                     for(int o = 0; o < ptr->children.size();o++){
                         ptr->children[o]->parent = ptr;
@@ -572,8 +587,12 @@ public:
                 ptr->parent = nullptr;
                 root = ptr;
                 newRoot = true;
-
+            }else if(ptr->parent == root && root->key.size() == 1 && root->key[0] == item){
+                ptr->parent = nullptr;
+                root = ptr;
+                newRoot = true;
             }
+
             ptr = ptr->parent;
 
         }
