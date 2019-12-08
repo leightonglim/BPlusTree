@@ -350,7 +350,186 @@ public:
         solveOverFlow(last_visited);
     }
 
-    void remove(int);
+    bool remove(int item){
+        if (!root) {
+            return false;
+        }else if(!hasChildren(root)){
+            int pos = findPosDelete(root->key, item);
+            if(pos==-1){
+                return false;
+            }
+            root->key.erase(root->key.begin()+pos);
+        }else{
+            bool isKey = false;
+            node *y = searchDelete(item, isKey);
+            if(!y){
+                return false;
+            }
+            int pos = findPosDelete(last_visited->key, item);
+            int min = ceil((static_cast<double>(order)/2.0))-1;
+            last_visited->key.erase(last_visited->key.begin()+pos);
+            if(last_visited->key.size() <min){
+                solveUnderFlow(last_visited,item);
+            }
+
+
+            if(isKey){
+                //delete the key, replace with child
+            }
+        }
+    }
+
+    void solveUnderFlow(node* ptr,int item){
+        int min = ceil((static_cast<double>(order)/2.0))-1;
+        bool newRoot = false;
+        while(!newRoot && (ptr->key.size() < min || ptr->children.size() == ptr->key.size())){
+            this->levelOrder(cout);
+            int x = findPos(ptr->key,item);
+            if(ptr->key.size() != 0 && ptr->key[x] == item){
+                ptr->key.erase(ptr->key.begin()+x);
+            }
+
+
+
+
+            if(ptr->leftSib && ptr->leftSib->key.size() > min){
+
+                ptr->parent->key.insert(ptr->parent->key.begin(),ptr->leftSib->key[ptr->leftSib->key.size()-1]);
+                ptr->leftSib->key.erase(ptr->leftSib->key.end());
+                ptr->key.insert(ptr->key.begin(),ptr->parent->key[ptr->parent->key.size()-1]);
+                ptr->parent->key.erase(ptr->parent->key.end());
+                if(hasChildren(ptr->leftSib)){
+                    ptr->children.insert(ptr->children.begin(),ptr->leftSib->children[ptr->leftSib->children.size()-1]);
+                    ptr->children[0]->parent = ptr;
+                    ptr->children.erase(ptr->children.end());
+                }
+            }
+
+            else if(ptr->rightSib && ptr->rightSib->key.size() > min){
+                if(ptr->rightSib->isleaf){
+                    ptr->parent->key.push_back(ptr->rightSib->key[1]);
+                    ptr->key.insert(ptr->key.end(),ptr->parent->key[0]);
+                    ptr->rightSib->key.erase(ptr->rightSib->key.begin());
+                    ptr->parent->key.erase(ptr->parent->key.begin());
+                }else{
+                    ptr->parent->key.push_back(ptr->rightSib->key[0]);
+                    ptr->key.insert(ptr->key.end(),ptr->parent->key[0]);
+                    ptr->rightSib->key.erase(ptr->rightSib->key.begin());
+                    ptr->parent->key.erase(ptr->parent->key.begin());
+                    if(hasChildren(ptr->rightSib)){
+                        ptr->children.push_back(ptr->rightSib->children[0]);
+                        ptr->children[ptr->children.size()-1]->parent = ptr;
+                        ptr->rightSib->children.erase(ptr->rightSib->children.begin());
+                    }
+                }
+
+
+            }else if(ptr->isleaf){
+                if(ptr->leftSib && ptr->leftSib->parent == ptr->parent){
+                    for(int i = 0; i < ptr->leftSib->key.size(); i++){
+                        ptr->key.insert(ptr->key.begin()+i,ptr->leftSib->key[i]);
+                    }
+                    int pos;
+                    for( pos = 0; pos < ptr->parent->children.size() && ptr->parent->children[pos]!=ptr->leftSib; pos++){}
+                    ptr->parent->children.erase(ptr->parent->children.begin()+pos);
+
+                    if(ptr->leftSib->leftSib){
+                    ptr->leftSib = ptr->leftSib->leftSib;
+                    }
+
+                    ptr->leftSib->rightSib = ptr;
+
+
+                }else if(ptr->rightSib && ptr->rightSib->parent == ptr->parent){
+
+
+                    int p = ptr->rightSib->key[0];
+                    for(int i = 0; i < ptr->rightSib->key.size(); i++){
+                        ptr->key.push_back(ptr->rightSib->key[i]);
+                    }
+                    int pos;
+                    for( pos = 0; pos < ptr->parent->children.size() && ptr->parent->children[pos]!=ptr->rightSib; pos++){}
+                    ptr->parent->children.erase(ptr->parent->children.begin()+pos);
+                    int po = findPos(ptr->parent->key,p);
+                    if(ptr->key.size() != 0 && ptr->key[po] == p){
+                        ptr->parent->key.erase(ptr->parent->key.begin()+po);
+                    }
+
+                    if(ptr->rightSib->rightSib){
+                        ptr->rightSib = ptr->rightSib->rightSib;
+                    }
+
+                    ptr->rightSib->leftSib = ptr;
+                }
+
+            }else{
+                if(ptr->leftSib && ptr->leftSib->parent == ptr->parent){
+                    int i;
+                    for(i = 0; i < ptr->parent->children.size() && ptr->leftSib != ptr->parent->children[i]; i++){}
+                    int k = ptr->parent->key[i];
+                    ptr->parent->key.erase(ptr->parent->key.begin()+i);
+                    ptr->parent->children.erase(ptr->parent->children.begin()+i);
+                    ptr->key.push_back(k);
+                    for(int j = 0; j < ptr->leftSib->key.size(); j++){
+                        ptr->key.insert(ptr->key.begin()+j,ptr->rightSib->key[j]);
+                    }
+                    for(int k = 0; k < ptr->leftSib->children.size(); k++){
+                        ptr->children.insert(ptr->children.begin()+k,ptr->leftSib->children[k]);
+                    }
+
+                    if(ptr->leftSib->leftSib){
+                    ptr->leftSib = ptr->leftSib->leftSib;
+                    }
+
+                    ptr->leftSib->rightSib = ptr;
+
+                    for(int o = 0; o < ptr->children.size();o++){
+                        ptr->children[o]->parent = ptr;
+                    }
+
+
+                }else if(ptr->rightSib && ptr->rightSib->parent == ptr->parent){
+                    int i;
+                    for(i = 0; i < ptr->parent->children.size() && ptr->rightSib != ptr->parent->children[i]; i++){}
+                    int k = ptr->parent->key[i-1];
+                    ptr->parent->key.erase(ptr->parent->key.begin()+i-1);
+                    ptr->parent->children.erase(ptr->parent->children.begin()+i);
+                    ptr->key.push_back(k);
+                    for(int j = 0; j < ptr->rightSib->key.size(); j++){
+                        ptr->key.push_back(ptr->rightSib->key[j]);
+                    }
+                    for(int k = 0; k < ptr->rightSib->children.size(); k++){
+                        ptr->children.push_back(ptr->rightSib->children[k]);
+                    }
+                    if(ptr->rightSib->rightSib){
+                    ptr->rightSib = ptr->rightSib->rightSib;
+                    }
+                    ptr->rightSib->leftSib = ptr;
+
+                    for(int o = 0; o < ptr->children.size();o++){
+                        ptr->children[o]->parent = ptr;
+                    }
+
+                }
+
+
+
+
+
+            }
+
+
+            if(ptr->parent == root && root->key.empty()){
+                ptr->parent = nullptr;
+                root = ptr;
+                newRoot = true;
+
+            }
+            ptr = ptr->parent;
+
+        }
+
+    }
 
 
     int xDimension(){
