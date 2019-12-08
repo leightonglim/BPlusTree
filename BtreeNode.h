@@ -142,11 +142,9 @@ public:
     }
     
     
-    template <typename T>
-    void shiftRight(vector<T> v,size_t pos){
-//        T a;
-//        v.push_back(a);
+    void shiftRight(vector<node*> v,size_t pos){
         for(size_t i = v.size(); i > pos; i--){
+
             v.insert(v.begin()+i,v[i-1]);
         }
     }
