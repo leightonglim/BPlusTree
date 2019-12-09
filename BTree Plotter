@@ -415,6 +415,10 @@ public:
             if(ptr->key.size() >= min && ptr->children.size() >  ptr->key.size()){
                 return;
             }
+
+
+
+
             if(ptr->leftSib && ptr->leftSib->key.size() > min){
                 int pos1 = findPos(ptr->parent->key,ptr->leftSib->key[ptr->leftSib->key.size()-1]);
                 ptr->parent->key.insert(ptr->parent->key.begin()+pos1,ptr->leftSib->key[ptr->leftSib->key.size()-1]);
@@ -434,6 +438,7 @@ public:
                     ptr->leftSib->children.pop_back();
                 }
             }
+
             else if(ptr->rightSib && ptr->rightSib->key.size() > min){
                 if(ptr->rightSib->isleaf){
                     int pos2 = findPos(ptr->parent->key,ptr->rightSib->key[1]);
@@ -442,8 +447,10 @@ public:
                     ptr->rightSib->key.erase(ptr->rightSib->key.begin());
                     ptr->parent->key.erase(ptr->parent->key.begin());
                 }else{
-                    ptr->parent->key.push_back(ptr->rightSib->key[0]);
-                    ptr->key.insert(ptr->key.end(),ptr->parent->key[0]);
+                    int pos2 = findPos(ptr->parent->key,ptr->rightSib->key[0]);
+
+                    ptr->parent->key.insert(ptr->parent->key.begin()+pos2,ptr->rightSib->key[0]);
+                    ptr->key.push_back(ptr->parent->key[0]);
                     ptr->rightSib->key.erase(ptr->rightSib->key.begin());
                     ptr->parent->key.erase(ptr->parent->key.begin());
                     if(hasChildren(ptr->rightSib)){
@@ -452,6 +459,8 @@ public:
                         ptr->rightSib->children.erase(ptr->rightSib->children.begin());
                     }
                 }
+
+
             }else if(ptr->isleaf){
                 if(ptr->leftSib && ptr->leftSib->parent == ptr->parent){
                     for(int i = 0; i < ptr->leftSib->key.size(); i++){
@@ -465,6 +474,10 @@ public:
                         ptr->leftSib = ptr->leftSib->leftSib;
                         ptr->leftSib->rightSib = ptr;
                     }
+
+
+
+
                 }else if(ptr->rightSib && ptr->rightSib->parent == ptr->parent){
 
 
@@ -484,6 +497,8 @@ public:
                         ptr->rightSib = ptr->rightSib->rightSib;
                         ptr->rightSib->leftSib = ptr;
                     }
+
+
                 }
 
             }else{
@@ -505,6 +520,9 @@ public:
                         ptr->leftSib = ptr->leftSib->leftSib;
                         ptr->leftSib->rightSib = ptr;
                     }
+
+
+
                     for(int o = 0; o < ptr->children.size();o++){
                         ptr->children[o]->parent = ptr;
                     }
@@ -532,7 +550,13 @@ public:
                     for(int o = 0; o < ptr->children.size();o++){
                         ptr->children[o]->parent = ptr;
                     }
+
                 }
+
+
+
+
+
             }
 
 
