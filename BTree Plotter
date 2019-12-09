@@ -403,16 +403,22 @@ public:
         }
     }
 
-    void solveUnderFlow(node* ptr,int item){
+   void solveUnderFlow(node* ptr,int item){
         int min = ceil((static_cast<double>(order)/2.0))-1;
         bool newRoot = false;
+
+
         while(!newRoot && (ptr->key.size() < min || ptr->children.size() == ptr->key.size())){
             this->levelOrder(cout);
             int x = findPos(ptr->key,item);
-            if(ptr->key.size() != 0 && ptr->key[x] == item){
+
+
+            if(!ptr->key.empty() && ptr->key.size() != x && ptr->key[x] == item){
                 ptr->key.erase(ptr->key.begin()+x);
             }
             if(ptr->key.size() >= min && ptr->children.size() >  ptr->key.size()){
+                return;
+            }else if(ptr == root && ptr->children.size() > ptr->key.size()){
                 return;
             }
 
@@ -463,6 +469,11 @@ public:
 
             }else if(ptr->isleaf){
                 if(ptr->leftSib && ptr->leftSib->parent == ptr->parent){
+                    int k = ptr->key[0];
+                    int pos3 = findPos(ptr->parent->key,k);
+                    if(ptr->parent->key[pos3] == k){
+                        ptr->parent->key.erase(ptr->parent->key.begin()+pos3);
+                    }
                     for(int i = 0; i < ptr->leftSib->key.size(); i++){
                         ptr->key.insert(ptr->key.begin()+i,ptr->leftSib->key[i]);
                     }
@@ -488,6 +499,11 @@ public:
                     int pos;
                     for( pos = 0; pos < ptr->parent->children.size() && ptr->parent->children[pos]!=ptr->rightSib; pos++){}
                     ptr->parent->children.erase(ptr->parent->children.begin()+pos);
+                    int pos4 = findPos(ptr->parent->key,p);
+                    if(ptr->parent->key[pos4] == p){
+                        ptr->parent->key.erase(ptr->parent->key.begin()+pos4);
+                    }
+
                     int po = findPos(ptr->parent->key,p);
                     if(ptr->key.size() != 0 && ptr->key[po] == p){
                         ptr->parent->key.erase(ptr->parent->key.begin()+po);
@@ -508,7 +524,7 @@ public:
                     int k = ptr->parent->key[i];
                     ptr->parent->key.erase(ptr->parent->key.begin()+i);
                     ptr->parent->children.erase(ptr->parent->children.begin()+i);
-                    ptr->key.push_back(k);
+                    ptr->key.insert(ptr->key.begin(),k);
                     for(int j = 0; j < ptr->leftSib->key.size(); j++){
                         ptr->key.insert(ptr->key.begin()+j,ptr->leftSib->key[j]);
                     }
@@ -562,9 +578,13 @@ public:
 
             if(ptr->parent == root && root->key.empty()){
                 ptr->parent = nullptr;
+                ptr->leftSib = nullptr;
+                ptr->rightSib = nullptr;
                 root = ptr;
                 newRoot = true;
             }else if(ptr->parent == root && root->key.size() == 1 && root->key[0] == item){
+                ptr->leftSib = nullptr;
+                ptr->rightSib = nullptr;
                 ptr->parent = nullptr;
                 root = ptr;
                 newRoot = true;
