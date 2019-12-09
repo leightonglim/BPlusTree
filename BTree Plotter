@@ -1,21 +1,12 @@
 /*
- * Group project B+ Tree
- *
- *
- *
- *
- *
- *
- * Last Modified: 11/25/2019
- *
- *
- *11/27/2019
- * -add utility function,insertion and solve for overflow(neither checked)
- *
- * 12/2/2019
- * -modified insert,solve for overflow,level order traversal and search
- * -initial value to -1 is unnecessary, a node with no parents(disconnected node) is not yet have value stored
- */
+    Author: Jonathan Chew, Nilei Pan, Caleb Ling
+    Assignment Title: B+ Tree Visualization
+    Assignment Description: creating an SDL Plotter visualization of a B+ Tree
+    Due Date: 12/9/2019
+    Date Created: 11/28/2019
+    Date Last Modified: 12/9/2019
+
+*/
 
 
 #ifndef B_TREE_BTREENODE_H
@@ -43,25 +34,25 @@ private:
 
 
     struct node {
+        point upperLeft,downRight;
+        rectangle it;
         node* parent;
         vector<int> key;
         bool isleaf;
         int value;
         vector<node*> children;
+        node *leftSib = nullptr,*rightSib = nullptr;
 
         node() {
+
+            rectangle it;
             parent = nullptr;
             isleaf = true;
             vector<int> key[7];
-            vector<node *> children[8];
-            value = -1;
-        }
-
-        node(node* p,int k, bool l) {
-            parent = p;
-            key.push_back(k);
-            isleaf = true;
-//            value = -1;
+            vector<rectangle> keyBlock[7];
+            vector<node*> children[9];
+            leftSib = nullptr;
+            rightSib = nullptr;
         }
 
         ~node(){};
@@ -74,32 +65,43 @@ private:
 
 public:
 
-
     Bptree(int o){
         root = nullptr;
         order = o;
 
     }
 
-    ~Bptree(){ //not implemented
-
+    ~Bptree(){
+        destruct(root);
     }
 
-    node* search(int x, SDL_Plotter * g=nullptr) {
+    void destruct(node * ptr){
+        if(ptr){
+            for(int i = 0; i<ptr->children.size(); i++){
+                destruct(ptr->children[i]);
+            }
+            delete ptr;
+        }
+    }
+
+    node* search(int x, SDL_Plotter * g=nullptr, const bool * insertion = nullptr) {
         node* v = root;
         int i;
         while (v) {
             if(g){
                 stringstream ss;
                 string message;
+                if(insertion){
+                    ss << "INSERTING ";
+                }
                 ss << x;
-                ss >> message;
+                message = ss.str();
                 vector<int> w, y;
                 xDimension(w, y);
                 drawGraph(*g, w, y, v);
                 plotNumber(message, 1, point(1200, 25), *g, color(0, 0, 0));
                 g->update();
-                g->Sleep(1000);
+                g->Sleep(200);
             }
             for (i = 0; i < v->key.size() && x >= v->key[i] ; i++){
                 if (x == v->key[i] && v->isleaf) {
@@ -124,12 +126,14 @@ public:
         return i;
     }
 
-    bool isFull(node* n) {
-        return n->key.size() == this->order;
-    }
-
     bool hasChildren(node* n) {
         return n->children.size()!= 0;
+    }
+
+    void shiftRight(node* n,size_t pos){
+        for(size_t i = n->key.size(); i > pos; i--){
+            n->key.insert(n->key.begin()+i,n->key[i-1]);
+        }
     }
 
     template <typename T>
@@ -139,9 +143,6 @@ public:
         }
     }
 
-
-
-    // haven't tested yet
     void solveOverFlow(node* ptr) {
         while (ptr && ptr->key.size() >= order) {
             size_t pivot;
@@ -153,6 +154,13 @@ public:
             if(!ptr->isleaf){
                 //create a right children
                 node* rc = new node();
+                rc->leftSib = ptr;
+                if(ptr->rightSib){
+                    rc->rightSib = ptr->rightSib;
+                    rc->rightSib->leftSib = rc;
+                }
+
+                ptr->rightSib = rc;
                 if(root == ptr && !hasChildren(root)){
                     for (int i = pivot; i < ptr->key.size(); i++) {
                         rc->key.push_back(ptr->key[i]);
@@ -219,25 +227,32 @@ public:
 
                 if(pos == 0){
                     node* left = new node();
-                    //left->isleaf = true;
+                    left->rightSib = ptr;
+                    ptr->leftSib = left;
                     for(size_t i = 0; i < pivot; i++){
                         left->key.push_back(ptr->key[i]);
                     }
                     left->parent = ptr->parent;
                     size_t i = pivot,j = 0,size = ptr->key.size();
                     for(i,j; i < size; i++,j++){
-						swap(ptr->key[j], ptr->key[i]);
+                        swap(ptr->key[j], ptr->key[i]);
                     }
                     ptr->key.erase(ptr->key.begin()+j,ptr->key.end());
 
 
                     shiftRight(ptr->parent->children,0);
-					ptr->parent->children.insert(ptr->parent->children.begin(), left);
+                    ptr->parent->children.insert(ptr->parent->children.begin(), left);
                     left->parent = ptr->parent;
 
                 }else{
                     node* right = new node();
-                    //right->isleaf = true;
+                    right->leftSib = ptr;
+                    if(ptr->rightSib){
+                        right->rightSib = ptr->rightSib;
+                        right->rightSib->leftSib = right;
+                    }
+
+                    ptr->rightSib = right;
                     for(size_t i = pivot; i < ptr->key.size(); i++){
                         right->key.push_back(ptr->key[i]);
 
@@ -266,7 +281,8 @@ public:
     bool insert(int item, SDL_Plotter * g = nullptr) {
         node * y;
         if(g){
-            y = search(item, g);
+            bool insertion = true;
+            y = search(item, g, &insertion);
         }else{
             y = search(item);
         }
@@ -307,7 +323,7 @@ public:
         return i;
     }
 
-    node* searchDelete(int x, SDL_Plotter * g=nullptr) {
+    node* searchDelete(int x, SDL_Plotter * g=nullptr, const bool* deletion=nullptr) {
         node* v = root;
         bool isKey = false;
         int posOfKey;
@@ -318,14 +334,18 @@ public:
                 if(g){
                     stringstream ss;
                     string message;
+                    if(deletion){
+                        ss << "DELETING ";
+                    }
+                    ss << x;
+                    message = ss.str();
                     vector<int> w, y;
                     xDimension(w, y);
                     drawGraph(*g, w, y, v);
-                    ss << x;
-                    ss >> message;
                     plotNumber(message, 1, point(1200, 25), *g, color(0, 0, 0));
                     g->update();
                     g->Sleep(1000);
+
                 }
                 if (x == v->key[i]) {
                     if(v->isleaf){
@@ -366,7 +386,8 @@ public:
         }else{
             node * y;
             if(g){
-                y = searchDelete(item, g);
+                bool deletion = true;
+                y = searchDelete(item, g, &deletion);
             }else{
                 y = searchDelete(item);
             }
@@ -374,48 +395,162 @@ public:
                 return false;
             }
             int pos = findPosDelete(last_visited->key, item);
+            int min = ceil((static_cast<double>(order)/2.0))-1;
             last_visited->key.erase(last_visited->key.begin()+pos);
-            double min = (order-1)/2.0;
-            if(last_visited->key.size()<min){
-                merge(last_visited);
+            if(last_visited->key.size() <min){
+                solveUnderFlow(last_visited,item);
             }
         }
     }
 
-    node* merge(node* ptr){
-        double min = (order-1)/2.0;
-        node * temp;
-        size_t i;
-        bool done = false;
-        while(ptr && !done){
-            if(ptr->parent){
-                temp = ptr->parent;
-                for(i = 0; i < temp->children.size() && temp->children[i]!=ptr; i++){}
-                if(!hasChildren(ptr)){ //ptr must be a leaf to try borrowing
-                    //try to borrow from right
-                    cout << "Children key size: " << temp->children[i+1]->key.size() << " min = " << min << endl;
-                    if(i+1 < temp->children.size() && temp->children[i+1]->key.size()-1 >= min){
-                        ptr->key.push_back(temp->children[i+1]->key.front());
-                        temp->children[i+1]->key.erase(temp->children[i+1]->key.begin());
-                        temp->key[i]=temp->children[i+1]->key.front();
-                        done = true;
+    void solveUnderFlow(node* ptr,int item){
+        int min = ceil((static_cast<double>(order)/2.0))-1;
+        bool newRoot = false;
+        while(!newRoot && (ptr->key.size() < min || ptr->children.size() == ptr->key.size())){
+            this->levelOrder(cout);
+            int x = findPos(ptr->key,item);
+            if(ptr->key.size() != 0 && ptr->key[x] == item){
+                ptr->key.erase(ptr->key.begin()+x);
+            }
+            if(ptr->key.size() >= min && ptr->children.size() >  ptr->key.size()){
+                return;
+            }
+            if(ptr->leftSib && ptr->leftSib->key.size() > min){
+                int pos1 = findPos(ptr->parent->key,ptr->leftSib->key[ptr->leftSib->key.size()-1]);
+                ptr->parent->key.insert(ptr->parent->key.begin()+pos1,ptr->leftSib->key[ptr->leftSib->key.size()-1]);
+                ptr->leftSib->key.pop_back();
+                if(ptr->parent->key[ptr->parent->key.size()-1] == item){
+                    ptr->key.insert(ptr->key.begin(),ptr->parent->key[pos1]);
+
+                }else{
+                    ptr->key.push_back(ptr->parent->key[ptr->parent->key.size()-1]);
+                }
+
+                ptr->parent->key.pop_back();
+
+                if(hasChildren(ptr->leftSib)){
+                    ptr->children.insert(ptr->children.begin(),ptr->leftSib->children[ptr->leftSib->children.size()-1]);
+                    ptr->children[0]->parent = ptr;
+                    ptr->leftSib->children.pop_back();
+                }
+            }
+            else if(ptr->rightSib && ptr->rightSib->key.size() > min){
+                if(ptr->rightSib->isleaf){
+                    int pos2 = findPos(ptr->parent->key,ptr->rightSib->key[1]);
+                    ptr->parent->key.insert(ptr->parent->key.begin()+pos2,ptr->rightSib->key[1]);
+                    ptr->key.push_back(ptr->parent->key[0]);
+                    ptr->rightSib->key.erase(ptr->rightSib->key.begin());
+                    ptr->parent->key.erase(ptr->parent->key.begin());
+                }else{
+                    ptr->parent->key.push_back(ptr->rightSib->key[0]);
+                    ptr->key.insert(ptr->key.end(),ptr->parent->key[0]);
+                    ptr->rightSib->key.erase(ptr->rightSib->key.begin());
+                    ptr->parent->key.erase(ptr->parent->key.begin());
+                    if(hasChildren(ptr->rightSib)){
+                        ptr->children.push_back(ptr->rightSib->children[0]);
+                        ptr->children[ptr->children.size()-1]->parent = ptr;
+                        ptr->rightSib->children.erase(ptr->rightSib->children.begin());
                     }
-                        //try to borrow from left
-                    else if(i-1>=0 && temp->children[i-1]->key.size()-1 >= min){
-                        ptr->key.insert(ptr->key.begin(), temp->children[i-1]->key.back());
-                        temp->children[i-1]->key.pop_back();
-                        temp->key[i-1]=ptr->key.front();
-                        done = true;
+                }
+            }else if(ptr->isleaf){
+                if(ptr->leftSib && ptr->leftSib->parent == ptr->parent){
+                    for(int i = 0; i < ptr->leftSib->key.size(); i++){
+                        ptr->key.insert(ptr->key.begin()+i,ptr->leftSib->key[i]);
+                    }
+                    int pos;
+                    for( pos = 0; pos < ptr->parent->children.size() && ptr->parent->children[pos]!=ptr->leftSib; pos++){}
+                    ptr->parent->children.erase(ptr->parent->children.begin()+pos);
+
+                    if(ptr->leftSib && ptr->leftSib->leftSib){
+                        ptr->leftSib = ptr->leftSib->leftSib;
+                        ptr->leftSib->rightSib = ptr;
+                    }
+                }else if(ptr->rightSib && ptr->rightSib->parent == ptr->parent){
+
+
+                    int p = ptr->rightSib->key[0];
+                    for(int i = 0; i < ptr->rightSib->key.size(); i++){
+                        ptr->key.push_back(ptr->rightSib->key[i]);
+                    }
+                    int pos;
+                    for( pos = 0; pos < ptr->parent->children.size() && ptr->parent->children[pos]!=ptr->rightSib; pos++){}
+                    ptr->parent->children.erase(ptr->parent->children.begin()+pos);
+                    int po = findPos(ptr->parent->key,p);
+                    if(ptr->key.size() != 0 && ptr->key[po] == p){
+                        ptr->parent->key.erase(ptr->parent->key.begin()+po);
+                    }
+
+                    if(ptr->rightSib && ptr->rightSib->rightSib){
+                        ptr->rightSib = ptr->rightSib->rightSib;
+                        ptr->rightSib->leftSib = ptr;
+                    }
+                }
+
+            }else{
+                if(ptr->leftSib && ptr->leftSib->parent == ptr->parent){
+                    int i;
+                    for(i = 0; i < ptr->parent->children.size() && ptr->leftSib != ptr->parent->children[i]; i++){}
+                    int k = ptr->parent->key[i];
+                    ptr->parent->key.erase(ptr->parent->key.begin()+i);
+                    ptr->parent->children.erase(ptr->parent->children.begin()+i);
+                    ptr->key.push_back(k);
+                    for(int j = 0; j < ptr->leftSib->key.size(); j++){
+                        ptr->key.insert(ptr->key.begin()+j,ptr->leftSib->key[j]);
+                    }
+                    for(int k = 0; k < ptr->leftSib->children.size(); k++){
+                        ptr->children.insert(ptr->children.begin()+k,ptr->leftSib->children[k]);
+                    }
+
+                    if(ptr->leftSib && ptr->leftSib->leftSib){
+                        ptr->leftSib = ptr->leftSib->leftSib;
+                        ptr->leftSib->rightSib = ptr;
+                    }
+                    for(int o = 0; o < ptr->children.size();o++){
+                        ptr->children[o]->parent = ptr;
+                    }
+
+
+                }else if(ptr->rightSib && ptr->rightSib->parent == ptr->parent){
+                    int i;
+                    for(i = 0; i < ptr->parent->children.size() && ptr->rightSib != ptr->parent->children[i]; i++){}
+                    int k = ptr->parent->key[i-1];
+                    ptr->parent->key.erase(ptr->parent->key.begin()+i-1);
+                    ptr->parent->children.erase(ptr->parent->children.begin()+i);
+                    ptr->key.push_back(k);
+                    for(int j = 0; j < ptr->rightSib->key.size(); j++){
+                        ptr->key.push_back(ptr->rightSib->key[j]);
+                    }
+                    for(int k = 0; k < ptr->rightSib->children.size(); k++){
+                        ptr->children.push_back(ptr->rightSib->children[k]);
+                    }
+                    if(ptr-> rightSib && ptr->rightSib->rightSib){
+                        ptr->rightSib = ptr->rightSib->rightSib;
+                        ptr->rightSib->leftSib = ptr;
+                    }
+
+
+                    for(int o = 0; o < ptr->children.size();o++){
+                        ptr->children[o]->parent = ptr;
                     }
                 }
             }
-            if(!done){ //this means borrowing was not successful
-                done = true;
-                cout << "sorry, removal is not possible" << endl;
-            }
-        }
-    }
 
+
+            if(ptr->parent == root && root->key.empty()){
+                ptr->parent = nullptr;
+                root = ptr;
+                newRoot = true;
+            }else if(ptr->parent == root && root->key.size() == 1 && root->key[0] == item){
+                ptr->parent = nullptr;
+                root = ptr;
+                newRoot = true;
+            }
+
+            ptr = ptr->parent;
+
+        }
+
+    }
 
     void xDimension(vector<int>& v, vector<int>& y){
         while(!v.empty()){
@@ -530,45 +665,266 @@ public:
 
     }
 
+    void printLetter(SDL_Plotter &g, char a, point P, color color1, int scale) {
+        ifstream input;
+        int rows, cols;
+        switch(a){
+            case 'A':
+                input.open("A.txt");
+                break;
+            case 'B':
+                input.open("B.txt");
+                break;
+            case 'C':
+                input.open("C.txt");
+                break;
+            case 'D':
+                input.open("D.txt");
+                break;
+            case 'E':
+                input.open("E.txt");
+                break;
+            case 'F':
+                input.open("F.txt");
+                break;
+            case 'G':
+                input.open("G.txt");
+                break;
+            case 'H':
+                input.open("H.txt");
+                break;
+            case 'I':
+                input.open("1.txt");
+                break;
+            case 'J':
+                input.open("J.txt");
+                break;
+            case 'K':
+                input.open("K.txt");
+                break;
+            case 'L':
+                input.open("L.txt");
+                break;
+            case 'M':
+                input.open("M.txt");
+                break;
+            case 'N':
+                input.open("N.txt");
+                break;
+            case 'O':
+                input.open("O.txt");
+                break;
+            case 'P':
+                input.open("P.txt");
+                break;
+            case 'Q':
+                input.open("Q.txt");
+                break;
+            case 'R':
+                input.open("R.txt");
+                break;
+            case 'S':
+                input.open("S.txt");
+                break;
+            case 'T':
+                input.open("T.txt");
+                break;
+            case 'U':
+                input.open("U.txt");
+                break;
+            case 'V':
+                input.open("V.txt");
+                break;
+            case 'W':
+                input.open("W.txt");
+                break;
+            case 'X':
+                input.open("X.txt");
+                break;
+            case 'Y':
+                input.open("Y.txt");
+                break;
+            case 'Z':
+                input.open("Z.txt");
+                break;
+            default:
+                break;
+        }
+        input >> rows >> cols;
+        char letter[rows][cols];
+        for(int r = 0; r < rows; r++){
+            for(int c = 0; c < cols; c++){
+                input >> letter[r][c];
+            }
+        }
+        for(int y = 0; y < rows; y++){
+            for(int x = 0; x < cols; x++){
+                for(int r=0; r<scale; r++){
+                    for(int c=0; c<scale; c++){
+                        if(letter[y][x]=='1'){
+                            g.plotPixel(P.x+scale*x+r, P.y+scale*y+c, color1.R, color1.G, color1.B);
+                        }
+                    }
+                }
+            }
+        }
+        input.close();
+
+    }
+
     void plotNumber(const string message, int scale, point P, SDL_Plotter &g, color C) {
         size_t n=0;
         while(n<message.length()){
             switch(message[n]){
                 case '0':
                     printDigit(g, 0, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '1':
                     printDigit(g, 1, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '2':
                     printDigit(g, 2, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '3':
                     printDigit(g, 3, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '4':
                     printDigit(g, 4, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '5':
                     printDigit(g, 5, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '6':
                     printDigit(g, 6, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '7':
                     printDigit(g, 7, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '8':
                     printDigit(g, 8, P, C, scale);
+                    P.x+=(18*scale);
                     break;
                 case '9':
                     printDigit(g, 9, P, C, scale);
+                    P.x+=(18*scale);
+                    break;
+                case 'A':
+                    printLetter(g, 'A', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'B':
+                    printLetter(g, 'B', P, C, scale);
+                    P.x+=(16*scale);
+                    break;
+                case 'C':
+                    printLetter(g, 'C', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'D':
+                    printLetter(g, 'D', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'E':
+                    printLetter(g, 'E', P, C, scale);
+                    P.x+=(14*scale);
+                    break;
+                case 'F':
+                    printLetter(g, 'F', P, C, scale);
+                    P.x+=(14*scale);
+                    break;
+                case 'G':
+                    printLetter(g, 'G', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'H':
+                    printLetter(g, 'H', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'I':
+                    printLetter(g, 'I', P, C, scale);
+                    P.x+=(13*scale);
+                    break;
+                case 'J':
+                    printLetter(g, 'J', P, C, scale);
+                    P.x+=(17*scale);
+                    break;
+                case 'K':
+                    printLetter(g, 'K', P, C, scale);
+                    P.x+=(14*scale);
+                    break;
+                case 'L':
+                    printLetter(g, 'L', P, C, scale);
+                    P.x+=(13*scale);
+                    break;
+                case 'M':
+                    printLetter(g, 'M', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'N':
+                    printLetter(g, 'N', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'O':
+                    printLetter(g, 'O', P, C, scale);
+                    P.x+=(22*scale);
+                    break;
+                case 'P':
+                    printLetter(g, 'P', P, C, scale);
+                    P.x+=(14*scale);
+                    break;
+                case 'Q':
+                    printLetter(g, 'Q', P, C, scale);
+                    P.x+=(22*scale);
+                    break;
+                case 'R':
+                    printLetter(g, 'R', P, C, scale);
+                    P.x+=(14*scale);
+                    break;
+                case 'S':
+                    printLetter(g, 'S', P, C, scale);
+                    P.x+=(14*scale);
+                    break;
+                case 'T':
+                    printLetter(g, 'T', P, C, scale);
+                    P.x+=(18*scale);
+                    break;
+                case 'U':
+                    printLetter(g, 'U', P, C, scale);
+                    P.x+=(18*scale);
+                    break;
+                case 'V':
+                    printLetter(g, 'V', P, C, scale);
+                    P.x+=(18*scale);
+                    break;
+                case 'W':
+                    printLetter(g, 'W', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'X':
+                    printLetter(g, 'X', P, C, scale);
+                    P.x+=(20*scale);
+                    break;
+                case 'Y':
+                    printLetter(g, 'Y', P, C, scale);
+                    P.x+=(19*scale);
+                    break;
+                case 'Z':
+                    printLetter(g, 'Z', P, C, scale);
+                    P.x+=(16*scale);
                     break;
                 default:
+                    P.x+=(16*scale);
                     break;
             }
             n++;
-            P.x+=(18*scale);
         }
     }
 
@@ -603,8 +959,8 @@ public:
         while(!queue1.empty() || !queue2.empty()){
             while(!queue1.empty()){
                 if(hasChildren(queue1.front())){
-                    for (auto i : queue1.front()->children) {
-                        queue2.push(i);
+                    for (int i = 0; i<queue1.front()->children.size(); i++){
+                        queue2.push(queue1.front()->children[i]);
                     }
                 }
                 for(int i = 0; i<queue1.front()->key.size(); i++){
@@ -619,8 +975,8 @@ public:
             os << endl;
             while(!queue2.empty()){
                 if(hasChildren(queue2.front())){
-                    for (auto i : queue2.front()->children) {
-                        queue1.push(i);
+                    for (int i = 0; i<queue2.front()->children.size(); i++) {
+                        queue1.push(queue2.front()->children[i]);
                     }
                 }
                 for(int i = 0; i<queue2.front()->key.size(); i++){
